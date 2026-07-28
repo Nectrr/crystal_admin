@@ -58,7 +58,20 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
     if (code && code.data) {
       busyRef.current = true;
       setState({ phase: "scanning" });
-      handleDetected(code.data);
+
+      let finalCode = code.data;
+      try {
+        // Handle case where QR code contains the full URL
+        const url = new URL(code.data);
+        const urlCode = url.searchParams.get("code");
+        if (urlCode) {
+          finalCode = urlCode;
+        }
+      } catch (e) {
+        // Not a URL, use raw string
+      }
+
+      handleDetected(finalCode);
       return;
     }
 

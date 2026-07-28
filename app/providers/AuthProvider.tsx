@@ -84,11 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (loading) return;
     const isPublic = PUBLIC_PATHS.some((p) => pathname?.startsWith(p));
     if (!user && !isPublic) {
-      router.replace("/login");
+      const search = window.location.search;
+      const returnTo = encodeURIComponent((pathname || "/") + search);
+      router.replace(`/login?returnTo=${returnTo}`);
       return;
     }
     if (user && isPublic) {
-      router.replace(user.role === "scanner" ? SCANNER_HOME : "/dashboard");
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+      if (returnTo && returnTo.startsWith("/")) {
+        router.replace(returnTo);
+      } else {
+        router.replace(user.role === "scanner" ? SCANNER_HOME : "/dashboard");
+      }
       return;
     }
     if (user && user.role === "scanner" && pathname) {
