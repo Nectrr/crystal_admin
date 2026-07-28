@@ -61,3 +61,8 @@ export interface ScanResult {
 export function scanTicket(ticket_code: string) {
   return apiFetch<ScanResult>("/api/admin/tickets/scan", { method: "POST", body: { ticket_code } });
 }
+
+/** Read-only ticket status check — does not mark the ticket as scanned. */
+export function lookupTicket(ticket_code: string) {
+  return apiFetch<ScanResult>(`/api/admin/tickets/lookup/${encodeURIComponent(ticket_code)}`, { method: "GET" });
+}

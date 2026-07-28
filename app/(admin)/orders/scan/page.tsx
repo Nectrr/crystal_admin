@@ -1,36 +1,37 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { CheckCircle2, ScanLine, XCircle } from "lucide-react";
+import { CheckCircle2, ScanLine, Search, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Table";
 import { CameraScanner } from "@/components/orders/CameraScanner";
 import { ApiError } from "@/lib/api/client";
-import { scanTicket, type ScanResult } from "@/lib/api/orders";
+import { scanTicket, lookupTicket, type ScanResult } from "@/lib/api/orders";
 
-type Result = { ok: true; data: ScanResult } | { ok: false; message: string };
+type Result = { ok: true; mode: "scan" | "lookup"; data: ScanResult } | { ok: false; message: string };
 
 export default function ScanPage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"scan" | "lookup" | null>(null);
   const [result, setResult] = useState<Result | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function handleAction(mode: "scan" | "lookup", e?: FormEvent) {
+    e?.preventDefault();
     if (!code.trim()) return;
-    setLoading(true);
+    setLoading(mode);
     setResult(null);
     try {
-      const data = await scanTicket(code.trim());
-      setResult({ ok: true, data });
+      const data = mode === "scan" ? await scanTicket(code.trim()) : await lookupTicket(code.trim());
+      setResult({ ok: true, mode, data });
     } catch (err) {
       setResult({
         ok: false,
-        message: err instanceof ApiError ? err.message : "Scan failed. Please try again.",
+        message: err instanceof ApiError ? err.message : "Request failed. Please try again.",
       });
     } finally {
-      setLoading(false);
+      setLoading(null);
       setCode("");
     }
   }
@@ -54,7 +55,7 @@ export default function ScanPage() {
         <div className="h-px flex-1 bg-[#EDEAE0]" />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={(e) => handleAction("scan", e)} className="flex flex-col gap-3">
         <input
           inputMode="text"
           placeholder="Ticket code"
@@ -62,9 +63,24 @@ export default function ScanPage() {
           onChange={(e) => setCode(e.target.value)}
           className="w-full rounded-xl border-2 border-[#EDEAE0] px-4 py-5 text-2xl text-center tracking-wide text-[#4A4A3C] focus:outline-none focus:ring-4 focus:ring-[#B8952F]/30 focus:border-[#B8952F]"
         />
-        <Button type="submit" loading={loading} variant="secondary" className="w-full py-5 text-lg">
-          Check ticket
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" loading={loading === "scan"} variant="secondary" className="flex-1 py-5 text-lg">
+            Check ticket
+          </Button>
+          <Button
+            type="button"
+            loading={loading === "lookup"}
+            variant="ghost"
+            onClick={() => handleAction("lookup")}
+            className="flex-1 py-5 text-base border border-[#EDEAE0] flex items-center justify-center gap-2"
+          >
+            <Search className="h-4 w-4" />
+            Look up only
+          </Button>
+        </div>
+        <p className="text-xs text-[#8C8C78] text-center">
+          &quot;Look up only&quot; checks a ticket&apos;s status without marking it as scanned — use it if a guest disputes their ticket.
+        </p>
       </form>
 
       {result && (
@@ -76,9 +92,15 @@ export default function ScanPage() {
           {result.ok ? (
             <>
               <CheckCircle2 className="h-16 w-16 text-green-600" />
-              <p className="text-xl font-semibold text-green-800">Valid ticket</p>
+              <p className="text-xl font-semibold text-green-800">
+                {result.mode === "lookup" ? "Ticket found" : "Valid ticket"}
+              </p>
               <p className="text-base text-green-900">{result.data.attendee_name}</p>
               <p className="text-sm text-green-700">{result.data.attendee_email}</p>
+              <Badge color="green">{result.data.ticket.status}</Badge>
+              {result.mode === "lookup" && (
+                <p className="text-xs text-green-700">This ticket was not marked as scanned.</p>
+              )}
             </>
           ) : (
             <>

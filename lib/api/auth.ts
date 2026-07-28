@@ -1,15 +1,18 @@
 import { apiFetch } from "./client";
 
+export type AdminRole = "admin" | "scanner";
+
 export interface LoginResponse {
   token: string;
   refresh_token: string;
   expires_at: string;
-  user?: { id: string; email: string };
+  user?: { id: string; email: string; role: AdminRole };
 }
 
 export interface MeResponse {
   id: string;
   email: string;
+  role: AdminRole;
 }
 
 export function login(email: string, password: string) {
@@ -37,9 +40,9 @@ export function me() {
   return apiFetch<MeResponse>("/api/admin/auth/me", { method: "GET" });
 }
 
-export function createAdminUser(email: string, password: string) {
+export function createAdminUser(email: string, password: string, role?: AdminRole) {
   return apiFetch<{ message: string }>("/api/admin/auth/users", {
     method: "POST",
-    body: { email, password },
+    body: role ? { email, password, role } : { email, password },
   });
 }

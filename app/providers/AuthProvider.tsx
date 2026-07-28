@@ -26,6 +26,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const PUBLIC_PATHS = ["/login"];
+const SCANNER_HOME = "/orders/scan";
+const SCANNER_ALLOWED_PATHS = ["/orders/scan", "/settings"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
@@ -83,9 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isPublic = PUBLIC_PATHS.some((p) => pathname?.startsWith(p));
     if (!user && !isPublic) {
       router.replace("/login");
+      return;
     }
     if (user && isPublic) {
-      router.replace("/dashboard");
+      router.replace(user.role === "scanner" ? SCANNER_HOME : "/dashboard");
+      return;
+    }
+    if (user && user.role === "scanner" && pathname) {
+      const allowed = SCANNER_ALLOWED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+      if (!allowed) {
+        router.replace(SCANNER_HOME);
+      }
     }
   }, [loading, user, pathname, router]);
 
