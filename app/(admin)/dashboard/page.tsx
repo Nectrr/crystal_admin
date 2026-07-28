@@ -97,7 +97,7 @@ export default function DashboardPage() {
           <h2 className="text-base font-semibold text-[#4A4A3C]">Payments</h2>
           <EmptyState
             title="No payment data yet"
-            message="This account's dashboard response doesn't include a payments overview yet. If you expect one, check that the API has the payments update deployed."
+            message="This account's dashboard response doesn't include a payments overview yet."
           />
         </div>
       )}
