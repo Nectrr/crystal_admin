@@ -11,6 +11,12 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        surface: "#FFFFFF",
+        "nav-active": "#F5E9CE",
+        gold: "#B8952F",
+        ink: "#4A4A3C",
+        muted: "#8C8C78",
+        border: "#EDEAE0",
       },
     },
   },

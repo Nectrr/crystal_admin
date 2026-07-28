@@ -1,0 +1,173 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Input, Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { HeroImageField } from "@/components/ui/HeroImageField";
+import { ApiError } from "@/lib/api/client";
+import { useToast } from "@/app/providers/ToastProvider";
+import {
+  createShow,
+  updateShow,
+  type Show,
+  type ShowFormFields,
+  type HeroImageInput,
+} from "@/lib/api/shows";
+
+interface ShowFormProps {
+  initial?: Show;
+}
+
+type HeroKey = "hero_image_1" | "hero_image_2" | "hero_image_3";
+
+export function ShowForm({ initial }: ShowFormProps) {
+  const router = useRouter();
+  const { showSuccess, showError } = useToast();
+  const isEdit = !!initial;
+
+  const [fields, setFields] = useState<ShowFormFields>({
+    slug: initial?.slug ?? "",
+    artist_name: initial?.artist_name ?? "",
+    tour_name: initial?.tour_name ?? "",
+    description: initial?.description ?? "",
+    fan_goal: initial?.fan_goal ?? undefined,
+    subtitle: initial?.subtitle ?? "",
+    overview: initial?.overview ?? "",
+    things_to_know: initial?.things_to_know ?? "",
+    display_time: initial?.display_time ?? "",
+    meta_title: initial?.meta_title ?? "",
+    meta_description: initial?.meta_description ?? "",
+  });
+  const [images, setImages] = useState<Partial<Record<HeroKey, HeroImageInput | undefined>>>({});
+  const [slugError, setSlugError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  function update<K extends keyof ShowFormFields>(key: K, value: ShowFormFields[K]) {
+    setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  // Multipart is required if any image slot is set to "file"
+  const anyFileMode = Object.values(images).some((v) => v?.mode === "file");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSlugError(null);
+    setLoading(true);
+    try {
+      const multipart = anyFileMode;
+      if (isEdit && initial) {
+        await updateShow(initial.id, fields, images, multipart);
+        showSuccess("Show updated.");
+      } else {
+        await createShow(
+          fields,
+          images as Record<HeroKey, HeroImageInput | undefined>,
+          multipart
+        );
+        showSuccess("Show created.");
+      }
+      router.push("/shows");
+      router.refresh();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.code === "SLUG_TAKEN") {
+        setSlugError("This slug is already in use.");
+      } else if (err instanceof ApiError) {
+        showError(err.message);
+      } else {
+        showError("Something went wrong.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-3xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="Artist name"
+          required
+          value={fields.artist_name}
+          onChange={(e) => update("artist_name", e.target.value)}
+        />
+        <Input
+          label="Tour name"
+          required
+          value={fields.tour_name}
+          onChange={(e) => update("tour_name", e.target.value)}
+        />
+        <Input
+          label="Slug"
+          required
+          error={slugError ?? undefined}
+          value={fields.slug}
+          onChange={(e) => update("slug", e.target.value)}
+        />
+        <Input
+          label="Fan goal"
+          type="number"
+          value={fields.fan_goal ?? ""}
+          onChange={(e) => update("fan_goal", e.target.value ? Number(e.target.value) : undefined)}
+        />
+      </div>
+
+      <Textarea
+        label="Description"
+        required
+        value={fields.description}
+        onChange={(e) => update("description", e.target.value)}
+      />
+      <Input label="Subtitle" value={fields.subtitle ?? ""} onChange={(e) => update("subtitle", e.target.value)} />
+      <Textarea label="Overview" value={fields.overview ?? ""} onChange={(e) => update("overview", e.target.value)} />
+      <Textarea
+        label="Things to know"
+        value={fields.things_to_know ?? ""}
+        onChange={(e) => update("things_to_know", e.target.value)}
+      />
+      <Input
+        label="Display time"
+        placeholder="e.g. Doors 7pm"
+        value={fields.display_time ?? ""}
+        onChange={(e) => update("display_time", e.target.value)}
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input label="Meta title" value={fields.meta_title ?? ""} onChange={(e) => update("meta_title", e.target.value)} />
+        <Input
+          label="Meta description"
+          value={fields.meta_description ?? ""}
+          onChange={(e) => update("meta_description", e.target.value)}
+        />
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Hero images</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {(["hero_image_1", "hero_image_2", "hero_image_3"] as HeroKey[]).map((key, i) => (
+            <HeroImageField
+              key={key}
+              label={`Hero image ${i + 1}`}
+              currentUrl={initial?.[key]}
+              value={images[key]}
+              onChange={(v) => setImages((prev) => ({ ...prev, [key]: v }))}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-[#8C8C78] mt-2">
+          Choose &quot;Paste URL&quot; to reference an already-uploaded image, or &quot;Upload file&quot; to attach a
+          new file directly. Leaving a slot &quot;Unchanged&quot; keeps the existing image on edit.
+        </p>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="secondary" onClick={() => router.back()}>
+          Cancel
+        </Button>
+        <Button type="submit" loading={loading}>
+          {isEdit ? "Save changes" : "Create show"}
+        </Button>
+      </div>
+    </form>
+  );
+}
