@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { ArrowLeft, CheckCircle2, RotateCcw, ScanLine, ShieldAlert, XCircle } from "lucide-react";
@@ -129,9 +130,7 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#B8952F] text-white text-sm font-semibold">
-          C
-        </div>
+        <Image src="/crystalcity-logo.png" alt="CrystalCity" width={28} height={28} />
         <p className="text-sm font-medium text-[#D9C88C]">Door Scanner</p>
       </div>
 

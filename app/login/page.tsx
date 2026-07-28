@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Input } from "@/components/ui/Field";
@@ -38,9 +39,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#B8952F] text-white text-lg font-semibold">
-            C
-          </div>
+          <Image src="/crystalcity-logo.png" alt="CrystalCity" width={48} height={48} />
           <div className="text-center">
             <h1 className="text-lg font-semibold text-[#4A4A3C]">CrystalCity Admin</h1>
             <p className="text-sm text-[#8C8C78]">Sign in to manage shows, orders and more</p>

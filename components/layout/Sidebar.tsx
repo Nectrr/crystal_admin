@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -37,9 +38,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-[#EDEAE0] bg-white">
       <div className="flex items-center gap-3 px-5 py-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#B8952F] text-white font-semibold shadow-sm">
-          C
-        </div>
+        <Image src="/crystalcity-logo.png" alt="CrystalCity" width={36} height={36} className="shrink-0" />
         <div>
           <p className="text-sm font-semibold text-[#4A4A3C] leading-none">CrystalCity</p>
           <p className="text-xs text-[#8C8C78] mt-0.5">Admin</p>

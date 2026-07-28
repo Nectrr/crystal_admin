@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X, Loader2 } from "lucide-react";
@@ -60,9 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             {drawerOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#B8952F] text-white text-sm font-semibold">
-            C
-          </div>
+          <Image src="/crystalcity-logo.png" alt="CrystalCity" width={28} height={28} />
           <p className="text-sm font-semibold text-[#4A4A3C]">CrystalCity Admin</p>
         </header>
 

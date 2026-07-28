@@ -6,6 +6,9 @@ import { ToastProvider } from "./providers/ToastProvider";
 export const metadata: Metadata = {
   title: "CrystalCity Admin",
   description: "Admin dashboard for the CrystalCity ticketing platform",
+  icons: {
+    icon: "/crystalcity-logo.png",
+  },
 };
 
 export default function RootLayout({
