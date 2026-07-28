@@ -1,5 +1,4 @@
 import { apiFetch } from "./client";
-import type { CityBreakdown } from "./shows";
 
 export interface TourRegistration {
   id: string;
@@ -12,9 +11,14 @@ export interface TourRegistration {
   updated_at: string;
 }
 
+export interface TourRegistrationCityBreakdown {
+  city_slug: string;
+  count: number;
+}
+
 export interface TourRegistrationsResponse {
   registrations: TourRegistration[];
-  city_breakdown: CityBreakdown[];
+  city_breakdown: TourRegistrationCityBreakdown[];
 }
 
 export async function listTourRegistrations(): Promise<TourRegistrationsResponse> {

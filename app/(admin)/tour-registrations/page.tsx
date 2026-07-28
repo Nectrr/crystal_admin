@@ -115,8 +115,10 @@ export default function TourRegistrationsPage() {
                 {data.city_breakdown.map((c) => {
                   const max = Math.max(1, ...data.city_breakdown.map((x) => x.count));
                   return (
-                    <div key={c.tour_stop_id || c.city_slug || c.city_name} className="flex items-center gap-3">
-                      <span className="w-32 shrink-0 text-sm text-[#4A4A3C] truncate">{c.city_name || "Unspecified"}</span>
+                    <div key={c.city_slug} className="flex items-center gap-3">
+                      <span className="w-32 shrink-0 text-sm text-[#4A4A3C] truncate capitalize">
+                        {c.city_slug ? c.city_slug.replace(/-/g, " ") : "Unspecified"}
+                      </span>
                       <div className="flex-1 h-3 rounded-full bg-[#F5E9CE]/60 overflow-hidden">
                         <div className="h-full bg-[#B8952F] rounded-full" style={{ width: `${(c.count / max) * 100}%` }} />
                       </div>

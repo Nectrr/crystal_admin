@@ -92,6 +92,16 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {!loading && !payments && stats && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-base font-semibold text-[#4A4A3C]">Payments</h2>
+          <EmptyState
+            title="No payment data yet"
+            message="This account's dashboard response doesn't include a payments overview yet. If you expect one, check that the API has the payments update deployed."
+          />
+        </div>
+      )}
+
       {!loading && payments && (
         <div className="flex flex-col gap-6">
           <h2 className="text-base font-semibold text-[#4A4A3C]">Payments</h2>
@@ -126,11 +136,15 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-[#EDEAE0] bg-white p-5">
               <p className="text-[#8C8C78] text-sm mb-2">Orders by status</p>
               <div className="flex flex-wrap gap-1.5">
-                {(Object.entries(payments.orders_by_status) as [OrderStatus, number][]).map(([status, count]) => (
-                  <Badge key={status} color={STATUS_BADGE[status] ?? "gray"}>
-                    {status.replace("_", " ")}: {count}
-                  </Badge>
-                ))}
+                {Object.keys(payments.orders_by_status).length === 0 ? (
+                  <span className="text-sm text-[#8C8C78]">No orders yet</span>
+                ) : (
+                  (Object.entries(payments.orders_by_status) as [OrderStatus, number][]).map(([status, count]) => (
+                    <Badge key={status} color={STATUS_BADGE[status] ?? "gray"}>
+                      {status.replace("_", " ")}: {count}
+                    </Badge>
+                  ))
+                )}
               </div>
             </div>
           </div>

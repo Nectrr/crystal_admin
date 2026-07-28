@@ -42,6 +42,17 @@ export interface DashboardStats {
   payments?: PaymentsOverview;
 }
 
-export function getDashboardStats() {
-  return apiFetch<DashboardStats>("/api/admin/dashboard/stats", { method: "GET" });
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const data = await apiFetch<DashboardStats>("/api/admin/dashboard/stats", { method: "GET" });
+  if (!data.payments) return data;
+  return {
+    ...data,
+    payments: {
+      total_revenue_pence: data.payments.total_revenue_pence ?? 0,
+      revenue_by_show: data.payments.revenue_by_show ?? [],
+      orders_by_status: data.payments.orders_by_status ?? {},
+      refunds: data.payments.refunds ?? { count: 0, total_pence: 0 },
+      recent_transactions: data.payments.recent_transactions ?? [],
+    },
+  };
 }
