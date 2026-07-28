@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ScanLine, Search, XCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -11,19 +12,24 @@ import { scanTicket, lookupTicket, type ScanResult } from "@/lib/api/orders";
 
 type Result = { ok: true; mode: "scan" | "lookup"; data: ScanResult } | { ok: false; message: string };
 
-export default function ScanPage() {
+function ScanContent() {
+  const searchParams = useSearchParams();
+  const queryCode = searchParams.get("code");
+
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(queryCode || "");
   const [loading, setLoading] = useState<"scan" | "lookup" | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const autoScanFired = useRef(false);
 
-  async function handleAction(mode: "scan" | "lookup", e?: FormEvent) {
+  const handleAction = async (mode: "scan" | "lookup", targetCode: string = code, e?: FormEvent) => {
     e?.preventDefault();
-    if (!code.trim()) return;
+    const cleanCode = targetCode.trim();
+    if (!cleanCode) return;
     setLoading(mode);
     setResult(null);
     try {
-      const data = mode === "scan" ? await scanTicket(code.trim()) : await lookupTicket(code.trim());
+      const data = mode === "scan" ? await scanTicket(cleanCode) : await lookupTicket(cleanCode);
       setResult({ ok: true, mode, data });
     } catch (err) {
       setResult({
@@ -34,7 +40,15 @@ export default function ScanPage() {
       setLoading(null);
       setCode("");
     }
-  }
+  };
+
+  useEffect(() => {
+    if (queryCode && !autoScanFired.current) {
+      autoScanFired.current = true;
+      handleAction("scan", queryCode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryCode]);
 
   if (cameraOpen) {
     return <CameraScanner onClose={() => setCameraOpen(false)} />;
@@ -55,7 +69,7 @@ export default function ScanPage() {
         <div className="h-px flex-1 bg-[#EDEAE0]" />
       </div>
 
-      <form onSubmit={(e) => handleAction("scan", e)} className="flex flex-col gap-3">
+      <form onSubmit={(e) => handleAction("scan", code, e)} className="flex flex-col gap-3">
         <input
           inputMode="text"
           placeholder="Ticket code"
@@ -71,7 +85,7 @@ export default function ScanPage() {
             type="button"
             loading={loading === "lookup"}
             variant="ghost"
-            onClick={() => handleAction("lookup")}
+            onClick={() => handleAction("lookup", code)}
             className="flex-1 py-5 text-base border border-[#EDEAE0] flex items-center justify-center gap-2"
           >
             <Search className="h-4 w-4" />
@@ -112,5 +126,13 @@ export default function ScanPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ScanPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-[#8C8C78]">Loading scanner...</div>}>
+      <ScanContent />
+    </Suspense>
   );
 }
