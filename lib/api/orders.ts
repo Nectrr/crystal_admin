@@ -74,6 +74,11 @@ export async function listStopAttendees(showId: string, stopId: string): Promise
   return data ?? [];
 }
 
+/** Manually triggered bulk resend — no scheduling/automation, admin fires this whenever they choose. */
+export function sendAllStopTickets(showId: string, stopId: string) {
+  return apiFetch<{ sent: number }>(`/api/admin/shows/${showId}/tour-stops/${stopId}/send-tickets`, { method: "POST" });
+}
+
 export interface ScanResult {
   ticket: {
     id: string;

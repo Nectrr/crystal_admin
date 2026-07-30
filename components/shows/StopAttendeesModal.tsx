@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Send, QrCode } from "lucide-react";
+import { Loader2, Send, QrCode, MailCheck } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Badge, EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { listStopAttendees, resendOrderEmail, type StopAttendee, type TicketStatus } from "@/lib/api/orders";
+import {
+  listStopAttendees,
+  resendOrderEmail,
+  sendAllStopTickets,
+  type StopAttendee,
+  type TicketStatus,
+} from "@/lib/api/orders";
 
 interface StopAttendeesModalProps {
   showId: string;
@@ -27,6 +34,8 @@ export function StopAttendeesModal({ showId, stopId, stopLabel, onClose }: StopA
   const { showSuccess, showError } = useToast();
   const [attendees, setAttendees] = useState<StopAttendee[] | null>(null);
   const [resendingOrderId, setResendingOrderId] = useState<string | null>(null);
+  const [sendAllOpen, setSendAllOpen] = useState(false);
+  const [sendingAll, setSendingAll] = useState(false);
 
   useEffect(() => {
     if (!stopId) {
@@ -60,7 +69,25 @@ export function StopAttendeesModal({ showId, stopId, stopLabel, onClose }: StopA
     }
   }
 
+  async function handleSendAll() {
+    if (!stopId) return;
+    setSendingAll(true);
+    try {
+      const { sent } = await sendAllStopTickets(showId, stopId);
+      showSuccess(`Sent ${sent} ticket email${sent === 1 ? "" : "s"} for this tour stop.`);
+      setAttendees(
+        (prev) => prev?.map((a) => (a.order_status === "paid" ? { ...a, email_sent_at: new Date().toISOString() } : a)) ?? prev
+      );
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to send ticket emails.");
+    } finally {
+      setSendingAll(false);
+      setSendAllOpen(false);
+    }
+  }
+
   const scannedCount = attendees?.filter((a) => a.ticket_status === "scanned").length ?? 0;
+  const paidCount = attendees?.filter((a) => a.order_status === "paid").length ?? 0;
 
   const columns: DataTableColumn<StopAttendee>[] = [
     { key: "full_name", header: "Name", accessor: (a) => a.full_name, sortable: true, searchable: true, className: "font-medium" },
@@ -110,9 +137,14 @@ export function StopAttendeesModal({ showId, stopId, stopLabel, onClose }: StopA
         <EmptyState message="No paid tickets for this tour stop yet." />
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 text-sm text-[#8C8C78]">
-            <QrCode className="h-4 w-4" />
-            {scannedCount} of {attendees.length} tickets scanned in
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm text-[#8C8C78]">
+              <QrCode className="h-4 w-4" />
+              {scannedCount} of {attendees.length} tickets scanned in
+            </div>
+            <Button variant="secondary" className="!px-3 !py-1.5 text-xs" onClick={() => setSendAllOpen(true)} disabled={paidCount === 0}>
+              <MailCheck className="h-3.5 w-3.5" /> Send all tickets
+            </Button>
           </div>
           <DataTable
             columns={columns}
@@ -124,6 +156,16 @@ export function StopAttendeesModal({ showId, stopId, stopLabel, onClose }: StopA
           />
         </div>
       )}
+
+      <ConfirmDialog
+        open={sendAllOpen}
+        title="Send all tickets"
+        message={`Send the ticket email to all ${paidCount} paid attendee${paidCount === 1 ? "" : "s"} for this tour stop? Anyone already emailed will receive it again.`}
+        confirmLabel="Send"
+        loading={sendingAll}
+        onConfirm={handleSendAll}
+        onCancel={() => setSendAllOpen(false)}
+      />
     </Modal>
   );
 }
