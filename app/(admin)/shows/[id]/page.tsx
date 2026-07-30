@@ -161,9 +161,7 @@ function TourStopsTabWrapper({ showId }: { showId: string }) {
     (async () => {
       try {
         const show = await getShow(showId);
-        // Tour stops are not returned on the show object per spec; if the backend nests them,
-        // adjust here. For now we start with an empty list and let the tab manage CRUD state.
-        setStops((show as unknown as { tour_stops?: TourStop[] }).tour_stops ?? []);
+        setStops(show.tour_stops ?? []);
       } catch (err) {
         showError(err instanceof ApiError ? err.message : "Failed to load tour stops.");
         setStops([]);

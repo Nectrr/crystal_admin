@@ -33,6 +33,7 @@ export interface Show {
   updated_at: string;
   deleted_at?: string | null;
   ticketing?: TicketSettings;
+  tour_stops?: TourStop[];
 }
 
 export interface TourStop {
