@@ -48,6 +48,32 @@ export function refundOrder(id: string) {
   return apiFetch<Order>(`/api/admin/orders/${id}/refund`, { method: "POST" });
 }
 
+export function resendOrderEmail(id: string) {
+  return apiFetch<void>(`/api/admin/orders/${id}/resend-email`, { method: "POST" });
+}
+
+export type TicketStatus = "valid" | "scanned" | "void";
+
+export interface StopAttendee {
+  ticket_id: string;
+  ticket_code: string;
+  ticket_status: TicketStatus;
+  email_sent_at?: string | null;
+  order_id: string;
+  order_status: OrderStatus;
+  full_name: string;
+  email: string;
+  paid_at?: string | null;
+  created_at: string;
+}
+
+export async function listStopAttendees(showId: string, stopId: string): Promise<StopAttendee[]> {
+  const data = await apiFetch<StopAttendee[] | null>(`/api/admin/shows/${showId}/tour-stops/${stopId}/attendees`, {
+    method: "GET",
+  });
+  return data ?? [];
+}
+
 export interface ScanResult {
   ticket: {
     id: string;
