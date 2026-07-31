@@ -23,6 +23,7 @@ export interface Show {
   hero_image_3?: string | null;
   fan_goal?: number | null;
   is_active: boolean;
+  published_at: string;
   meta_title?: string | null;
   meta_description?: string | null;
   subtitle?: string | null;
@@ -81,6 +82,7 @@ export interface ShowFormFields {
   description: string;
   fan_goal?: number | null;
   is_active?: boolean;
+  published_at?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
   subtitle?: string | null;

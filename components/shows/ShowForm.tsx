@@ -40,6 +40,8 @@ export function ShowForm({ initial }: ShowFormProps) {
     meta_description: initial?.meta_description ?? "",
   });
   const [images, setImages] = useState<Partial<Record<HeroKey, HeroImageInput | undefined>>>({});
+  // datetime-local value; blank = publish now (backend defaults to now()).
+  const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? initial.published_at.slice(0, 16) : "");
   const [slugError, setSlugError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -54,14 +56,18 @@ export function ShowForm({ initial }: ShowFormProps) {
     e.preventDefault();
     setSlugError(null);
     setLoading(true);
+    const submitFields: ShowFormFields = {
+      ...fields,
+      published_at: publishedAtLocal ? new Date(publishedAtLocal).toISOString() : undefined,
+    };
     try {
       const multipart = anyFileMode;
       if (isEdit && initial) {
-        await updateShow(initial.id, fields, images, multipart);
+        await updateShow(initial.id, submitFields, images, multipart);
         showSuccess("Show updated.");
       } else {
         await createShow(
-          fields,
+          submitFields,
           images as Record<HeroKey, HeroImageInput | undefined>,
           multipart
         );
@@ -140,6 +146,14 @@ export function ShowForm({ initial }: ShowFormProps) {
           onChange={(e) => update("meta_description", e.target.value)}
         />
       </div>
+
+      <Input
+        label="Publish date"
+        type="datetime-local"
+        hint="Leave blank to publish now once you hit Publish. A past date backdates the show; a future date schedules it — once published (via the Publish button), it stays hidden until this date passes on its own."
+        value={publishedAtLocal}
+        onChange={(e) => setPublishedAtLocal(e.target.value)}
+      />
 
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Hero images</h3>
