@@ -67,6 +67,16 @@ export interface StopAttendee {
   created_at: string;
 }
 
+export interface NotifyStopOnSaleResponse {
+  sent: number;
+}
+
+export function notifyStopOnSale(showId: string, stopId: string) {
+  return apiFetch<NotifyStopOnSaleResponse>(`/api/admin/shows/${showId}/tour-stops/${stopId}/notify-on-sale`, {
+    method: "POST",
+  });
+}
+
 export async function listStopAttendees(showId: string, stopId: string): Promise<StopAttendee[]> {
   const data = await apiFetch<StopAttendee[] | null>(`/api/admin/shows/${showId}/tour-stops/${stopId}/attendees`, {
     method: "GET",

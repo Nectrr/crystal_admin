@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, Users, Tag, Power } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, Tag, Power, Megaphone } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import { TierManagerModal } from "@/components/shows/TierManagerModal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createTourStop, updateTourStop, deleteTourStop, type TourStop } from "@/lib/api/shows";
+import { notifyStopOnSale } from "@/lib/api/orders";
 
 interface TourStopsTabProps {
   showId: string;
@@ -43,6 +44,22 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const [attendeesStop, setAttendeesStop] = useState<TourStop | null>(null);
   const [tiersStop, setTiersStop] = useState<TourStop | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [notifyTarget, setNotifyTarget] = useState<TourStop | null>(null);
+  const [notifying, setNotifying] = useState(false);
+
+  async function handleNotify() {
+    if (!notifyTarget) return;
+    setNotifying(true);
+    try {
+      const { sent } = await notifyStopOnSale(showId, notifyTarget.id);
+      showSuccess(`Notified ${sent} registrant${sent === 1 ? "" : "s"} that ${notifyTarget.city_name} tickets are on sale.`);
+      setNotifyTarget(null);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to send notification.");
+    } finally {
+      setNotifying(false);
+    }
+  }
 
   async function handleToggleOnSale(stop: TourStop) {
     setTogglingId(stop.id);
@@ -166,6 +183,14 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
           <button onClick={() => setTiersStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="Manage pricing tiers">
             <Tag className="h-4 w-4" />
           </button>
+          <button
+            onClick={() => setNotifyTarget(stop)}
+            disabled={!stop.is_on_sale}
+            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
+            title={stop.is_on_sale ? "Notify registrants tickets are on sale" : "Turn sales on before notifying"}
+          >
+            <Megaphone className="h-4 w-4" />
+          </button>
           <button onClick={() => setEditingId(stop.id)} className="text-[#B8952F]">
             <Pencil className="h-4 w-4" />
           </button>
@@ -247,6 +272,16 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
         stopId={tiersStop?.id ?? null}
         stopLabel={tiersStop?.city_name}
         onClose={() => setTiersStop(null)}
+      />
+
+      <ConfirmDialog
+        open={!!notifyTarget}
+        title="Notify registrants"
+        message={`Email everyone who registered interest for ${notifyTarget?.city_name} to let them know tickets are on sale now?`}
+        confirmLabel="Send notification"
+        loading={notifying}
+        onConfirm={handleNotify}
+        onCancel={() => setNotifyTarget(null)}
       />
     </div>
   );
