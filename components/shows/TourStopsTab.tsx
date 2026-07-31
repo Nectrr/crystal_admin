@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil, Users, Tag, Power, Megaphone } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
@@ -12,8 +12,8 @@ import { StopAttendeesModal } from "@/components/shows/StopAttendeesModal";
 import { TierManagerModal } from "@/components/shows/TierManagerModal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { createTourStop, updateTourStop, deleteTourStop, type TourStop } from "@/lib/api/shows";
-import { notifyStopOnSale } from "@/lib/api/orders";
+import { createTourStop, updateTourStop, deleteTourStop, getShowOrders, type TourStop } from "@/lib/api/shows";
+import { notifyStopOnSale, type Order } from "@/lib/api/orders";
 
 interface TourStopsTabProps {
   showId: string;
@@ -59,6 +59,17 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [notifyTarget, setNotifyTarget] = useState<TourStop | null>(null);
   const [notifying, setNotifying] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setOrders(await getShowOrders(showId));
+      } catch {
+        // read-only section, ignore failures silently besides console
+      }
+    })();
+  }, [showId]);
 
   async function handleNotify() {
     if (!notifyTarget) return;
@@ -218,6 +229,38 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     },
   ];
 
+  const orderColumns: DataTableColumn<Order>[] = [
+    { key: "full_name", header: "Name", accessor: (o) => o.full_name, sortable: true, searchable: true },
+    {
+      key: "email",
+      header: "Email",
+      accessor: (o) => o.email,
+      sortable: true,
+      searchable: true,
+      render: (o) => <span className="text-[#8C8C78]">{o.email}</span>,
+    },
+    { key: "quantity", header: "Qty", accessor: (o) => o.quantity, sortable: true },
+    {
+      key: "total_pence",
+      header: "Total",
+      accessor: (o) => o.total_pence,
+      sortable: true,
+      render: (o) => (
+        <span>
+          {(o.total_pence / 100).toFixed(2)} {o.currency}
+        </span>
+      ),
+    },
+    { key: "status", header: "Status", accessor: (o) => o.status, sortable: true, searchable: true },
+    {
+      key: "created_at",
+      header: "Created",
+      accessor: (o) => new Date(o.created_at),
+      sortable: true,
+      render: (o) => <span className="text-[#8C8C78]">{new Date(o.created_at).toLocaleDateString()}</span>,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
@@ -265,6 +308,19 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
           pageSizeOptions={[10, 20, 50]}
         />
       )}
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Orders for this show</h3>
+        <DataTable
+          columns={orderColumns}
+          rows={orders}
+          rowKey={(o) => o.id}
+          emptyMessage="No orders yet."
+          searchPlaceholder="Search orders..."
+          pageSize={10}
+          pageSizeOptions={[10, 20, 50]}
+        />
+      </div>
 
       <ConfirmDialog
         open={!!deleteTarget}
