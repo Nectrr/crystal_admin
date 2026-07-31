@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, Users, Tag } from "lucide-react";
-import { EmptyState } from "@/components/ui/Table";
+import { Plus, Trash2, Pencil, Users, Tag, Power } from "lucide-react";
+import { Badge, EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
@@ -42,6 +42,20 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [attendeesStop, setAttendeesStop] = useState<TourStop | null>(null);
   const [tiersStop, setTiersStop] = useState<TourStop | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function handleToggleOnSale(stop: TourStop) {
+    setTogglingId(stop.id);
+    try {
+      const updated = await updateTourStop(showId, stop.id, { is_on_sale: !stop.is_on_sale });
+      onChange(stops.map((s) => (s.id === stop.id ? updated : s)));
+      showSuccess(updated.is_on_sale ? `${stop.city_name} is now on sale.` : `${stop.city_name} is no longer on sale.`);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to update sale status.");
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   function toPayload(d: Draft) {
     return {
@@ -125,12 +139,27 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
       ),
     },
     { key: "capacity", header: "Capacity", accessor: (s) => s.capacity ?? 0, sortable: true, render: (s) => <>{s.capacity ?? "-"}</> },
+    {
+      key: "is_on_sale",
+      header: "Sale Status",
+      accessor: (s) => (s.is_on_sale ? 1 : 0),
+      sortable: true,
+      render: (s) => <Badge color={s.is_on_sale ? "green" : "gray"}>{s.is_on_sale ? "On sale" : "Not on sale"}</Badge>,
+    },
     { key: "sort_order", header: "Order", accessor: (s) => s.sort_order, sortable: true },
     {
       key: "actions",
       header: "",
       render: (stop) => (
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleToggleOnSale(stop)}
+            disabled={togglingId === stop.id}
+            className={stop.is_on_sale ? "text-green-600 hover:text-green-700" : "text-[#8C8C78] hover:text-[#4A4A3C]"}
+            title={stop.is_on_sale ? "Turn ticket sales off" : "Turn ticket sales on"}
+          >
+            <Power className="h-4 w-4" />
+          </button>
           <button onClick={() => setAttendeesStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="View attendees">
             <Users className="h-4 w-4" />
           </button>

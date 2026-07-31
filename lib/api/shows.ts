@@ -45,6 +45,8 @@ export interface TourStop {
   venue_address?: string | null;
   event_start_at?: string | null;
   capacity?: number | null;
+  tickets_sold?: number;
+  is_on_sale: boolean;
   sort_order: number;
   created_at?: string;
   updated_at?: string;
@@ -165,7 +167,10 @@ export function unpublishShow(id: string) {
 
 // Tour stops
 
-export function createTourStop(showId: string, data: Omit<TourStop, "id" | "show_id" | "created_at" | "updated_at">) {
+export function createTourStop(
+  showId: string,
+  data: Omit<TourStop, "id" | "show_id" | "created_at" | "updated_at" | "is_on_sale" | "tickets_sold">
+) {
   return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops`, { method: "POST", body: data });
 }
 
