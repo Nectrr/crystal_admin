@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, Users } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, Tag } from "lucide-react";
 import { EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Field";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { StopAttendeesModal } from "@/components/shows/StopAttendeesModal";
+import { TierManagerModal } from "@/components/shows/TierManagerModal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createTourStop, updateTourStop, deleteTourStop, type TourStop } from "@/lib/api/shows";
@@ -40,6 +41,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [attendeesStop, setAttendeesStop] = useState<TourStop | null>(null);
+  const [tiersStop, setTiersStop] = useState<TourStop | null>(null);
 
   function toPayload(d: Draft) {
     return {
@@ -132,6 +134,9 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
           <button onClick={() => setAttendeesStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="View attendees">
             <Users className="h-4 w-4" />
           </button>
+          <button onClick={() => setTiersStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="Manage pricing tiers">
+            <Tag className="h-4 w-4" />
+          </button>
           <button onClick={() => setEditingId(stop.id)} className="text-[#B8952F]">
             <Pencil className="h-4 w-4" />
           </button>
@@ -206,6 +211,13 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
         stopId={attendeesStop?.id ?? null}
         stopLabel={attendeesStop?.city_name}
         onClose={() => setAttendeesStop(null)}
+      />
+
+      <TierManagerModal
+        showId={showId}
+        stopId={tiersStop?.id ?? null}
+        stopLabel={tiersStop?.city_name}
+        onClose={() => setTiersStop(null)}
       />
     </div>
   );
