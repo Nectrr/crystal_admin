@@ -9,13 +9,12 @@ import { Badge } from "@/components/ui/Table";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ShowForm } from "@/components/shows/ShowForm";
 import { TourStopsTab } from "@/components/shows/TourStopsTab";
-import { TicketingTab } from "@/components/shows/TicketingTab";
 import { RegistrationsTab } from "@/components/shows/RegistrationsTab";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { getShow, deleteShow, publishShow, unpublishShow, type Show, type TourStop } from "@/lib/api/shows";
 
-type Tab = "details" | "tour-stops" | "ticketing" | "registrations";
+type Tab = "details" | "tour-stops" | "registrations";
 
 export default function ShowDetailPage() {
   const params = useParams<{ id: string }>();
@@ -96,7 +95,6 @@ export default function ShowDetailPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "details", label: "Details" },
     { key: "tour-stops", label: "Tour Stops" },
-    { key: "ticketing", label: "Ticketing" },
     { key: "registrations", label: "Registrations" },
   ];
 
@@ -136,7 +134,6 @@ export default function ShowDetailPage() {
       {tab === "tour-stops" && (
         <TourStopsTabWrapper showId={show.id} />
       )}
-      {tab === "ticketing" && <TicketingTab showId={show.id} />}
       {tab === "registrations" && <RegistrationsTab showId={show.id} />}
 
       <ConfirmDialog

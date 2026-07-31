@@ -10,10 +10,19 @@ import { useToast } from "@/app/providers/ToastProvider";
 import {
   createShow,
   updateShow,
+  upsertTicketSettings,
   type Show,
   type ShowFormFields,
   type HeroImageInput,
 } from "@/lib/api/shows";
+
+// PricePence/FeePence are no longer admin-facing — pricing lives per tour
+// stop now (tiers + TourStop.fee_pence). The backend still requires a
+// show_ticket_settings row with a positive price to unlock ticketing at
+// all, so this is a fixed placeholder value that's never actually charged
+// (a stop with no tiers falls back to it, but every stop should have
+// either tiers or its own price configured before going on sale).
+const PLACEHOLDER_PRICE_PENCE = 1;
 
 interface ShowFormProps {
   initial?: Show;
@@ -45,6 +54,11 @@ export function ShowForm({ initial }: ShowFormProps) {
   const [slugError, setSlugError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [currency, setCurrency] = useState(initial?.ticketing?.currency ?? "GBP");
+  const [maxPerOrder, setMaxPerOrder] = useState(String(initial?.ticketing?.max_per_order ?? 10));
+  const [salesStart, setSalesStart] = useState(initial?.ticketing?.sales_start_at?.slice(0, 16) ?? "");
+  const [salesEnd, setSalesEnd] = useState(initial?.ticketing?.sales_end_at?.slice(0, 16) ?? "");
+
   function update<K extends keyof ShowFormFields>(key: K, value: ShowFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
   }
@@ -62,17 +76,27 @@ export function ShowForm({ initial }: ShowFormProps) {
     };
     try {
       const multipart = anyFileMode;
+      let showId: string;
       if (isEdit && initial) {
-        await updateShow(initial.id, submitFields, images, multipart);
-        showSuccess("Show updated.");
+        const updated = await updateShow(initial.id, submitFields, images, multipart);
+        showId = updated.id;
       } else {
-        await createShow(
+        const created = await createShow(
           submitFields,
           images as Record<HeroKey, HeroImageInput | undefined>,
           multipart
         );
-        showSuccess("Show created.");
+        showId = created.id;
       }
+      await upsertTicketSettings(showId, {
+        currency: currency.toUpperCase(),
+        price_pence: initial?.ticketing?.price_pence ?? PLACEHOLDER_PRICE_PENCE,
+        fee_pence: initial?.ticketing?.fee_pence ?? 0,
+        max_per_order: Number(maxPerOrder),
+        sales_start_at: salesStart ? new Date(salesStart).toISOString() : undefined,
+        sales_end_at: salesEnd ? new Date(salesEnd).toISOString() : undefined,
+      });
+      showSuccess(isEdit ? "Show updated." : "Show created.");
       router.push("/shows");
       router.refresh();
     } catch (err) {
@@ -154,6 +178,26 @@ export function ShowForm({ initial }: ShowFormProps) {
         value={publishedAtLocal}
         onChange={(e) => setPublishedAtLocal(e.target.value)}
       />
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Ticketing</h3>
+        <p className="text-xs text-[#8C8C78] mb-3">
+          Price and transaction fee are set per tour stop — see the Tour Stops tab once this show exists.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input label="Currency (3-letter)" maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value)} />
+          <Input
+            label="Max per order"
+            type="number"
+            min={1}
+            max={50}
+            value={maxPerOrder}
+            onChange={(e) => setMaxPerOrder(e.target.value)}
+          />
+          <Input label="Sales start" type="datetime-local" value={salesStart} onChange={(e) => setSalesStart(e.target.value)} />
+          <Input label="Sales end" type="datetime-local" value={salesEnd} onChange={(e) => setSalesEnd(e.target.value)} />
+        </div>
+      </div>
 
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Hero images</h3>
