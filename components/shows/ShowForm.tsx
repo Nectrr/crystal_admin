@@ -56,8 +56,6 @@ export function ShowForm({ initial }: ShowFormProps) {
 
   const [currency, setCurrency] = useState(initial?.ticketing?.currency ?? "GBP");
   const [maxPerOrder, setMaxPerOrder] = useState(String(initial?.ticketing?.max_per_order ?? 10));
-  const [salesStart, setSalesStart] = useState(initial?.ticketing?.sales_start_at?.slice(0, 16) ?? "");
-  const [salesEnd, setSalesEnd] = useState(initial?.ticketing?.sales_end_at?.slice(0, 16) ?? "");
 
   function update<K extends keyof ShowFormFields>(key: K, value: ShowFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -93,8 +91,6 @@ export function ShowForm({ initial }: ShowFormProps) {
         price_pence: initial?.ticketing?.price_pence ?? PLACEHOLDER_PRICE_PENCE,
         fee_pence: initial?.ticketing?.fee_pence ?? 0,
         max_per_order: Number(maxPerOrder),
-        sales_start_at: salesStart ? new Date(salesStart).toISOString() : undefined,
-        sales_end_at: salesEnd ? new Date(salesEnd).toISOString() : undefined,
       });
       showSuccess(isEdit ? "Show updated." : "Show created.");
       router.push("/shows");
@@ -182,7 +178,7 @@ export function ShowForm({ initial }: ShowFormProps) {
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Ticketing</h3>
         <p className="text-xs text-[#8C8C78] mb-3">
-          Price and transaction fee are set per tour stop — see the Tour Stops tab once this show exists.
+          Price, transaction fee, and sales windows are set per tour stop — see the Tour Stops tab once this show exists.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Currency (3-letter)" maxLength={3} value={currency} onChange={(e) => setCurrency(e.target.value)} />
@@ -194,8 +190,6 @@ export function ShowForm({ initial }: ShowFormProps) {
             value={maxPerOrder}
             onChange={(e) => setMaxPerOrder(e.target.value)}
           />
-          <Input label="Sales start" type="datetime-local" value={salesStart} onChange={(e) => setSalesStart(e.target.value)} />
-          <Input label="Sales end" type="datetime-local" value={salesEnd} onChange={(e) => setSalesEnd(e.target.value)} />
         </div>
       </div>
 
