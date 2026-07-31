@@ -15,6 +15,7 @@ export interface Artist {
   instagram_url?: string | null;
   youtube_url?: string | null;
   twitter_url?: string | null;
+  spotify_url?: string | null;
   booking_email?: string | null;
   sort_order: number;
   is_active: boolean;

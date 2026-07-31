@@ -27,6 +27,7 @@ export function ArtistForm({ initial }: { initial?: Artist }) {
     instagram_url: initial?.instagram_url ?? "",
     youtube_url: initial?.youtube_url ?? "",
     twitter_url: initial?.twitter_url ?? "",
+    spotify_url: initial?.spotify_url ?? "",
     booking_email: initial?.booking_email ?? "",
     sort_order: initial?.sort_order ?? 0,
     is_active: initial?.is_active ?? true,
@@ -85,6 +86,7 @@ export function ArtistForm({ initial }: { initial?: Artist }) {
         <Input label="Instagram URL" value={form.instagram_url ?? ""} onChange={(e) => update("instagram_url", e.target.value)} />
         <Input label="YouTube URL" value={form.youtube_url ?? ""} onChange={(e) => update("youtube_url", e.target.value)} />
         <Input label="Twitter URL" value={form.twitter_url ?? ""} onChange={(e) => update("twitter_url", e.target.value)} />
+        <Input label="Spotify URL" value={form.spotify_url ?? ""} onChange={(e) => update("spotify_url", e.target.value)} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
