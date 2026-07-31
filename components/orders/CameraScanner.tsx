@@ -67,7 +67,7 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
         if (urlCode) {
           finalCode = urlCode;
         }
-      } catch (e) {
+      } catch {
         // Not a URL, use raw string
       }
 
