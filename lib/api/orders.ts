@@ -44,8 +44,9 @@ export async function listOrders(params: ListOrdersParams): Promise<ListOrdersRe
   return { ...data, orders: data.orders ?? [] };
 }
 
+// The backend returns 204 No Content on success — no updated order body.
 export function refundOrder(id: string) {
-  return apiFetch<Order>(`/api/admin/orders/${id}/refund`, { method: "POST" });
+  return apiFetch<void>(`/api/admin/orders/${id}/refund`, { method: "POST" });
 }
 
 export function resendOrderEmail(id: string) {

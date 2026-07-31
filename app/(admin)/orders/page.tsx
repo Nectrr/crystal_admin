@@ -64,8 +64,8 @@ export default function OrdersPage() {
     setRefunding(true);
     setRefundError(null);
     try {
-      const updated = await refundOrder(refundTarget.id);
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      await refundOrder(refundTarget.id);
+      setOrders((prev) => prev.map((o) => (o.id === refundTarget.id ? { ...o, status: "refunded" } : o)));
       showSuccess("Order refunded.");
       setRefundTarget(null);
     } catch (err) {
