@@ -47,6 +47,9 @@ export interface TourStop {
   capacity?: number | null;
   tickets_sold?: number;
   is_on_sale: boolean;
+  fee_pence?: number | null;
+  sales_start_at?: string | null;
+  sales_end_at?: string | null;
   sort_order: number;
   created_at?: string;
   updated_at?: string;

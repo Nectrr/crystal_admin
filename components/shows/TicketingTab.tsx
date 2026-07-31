@@ -30,8 +30,6 @@ export function TicketingTab({ showId }: TicketingTabProps) {
   const [price, setPrice] = useState("0");
   const [fee, setFee] = useState("0");
   const [maxPerOrder, setMaxPerOrder] = useState("10");
-  const [salesStart, setSalesStart] = useState("");
-  const [salesEnd, setSalesEnd] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -42,8 +40,6 @@ export function TicketingTab({ showId }: TicketingTabProps) {
         setPrice((s.price_pence / 100).toFixed(2));
         setFee((s.fee_pence / 100).toFixed(2));
         setMaxPerOrder(String(s.max_per_order));
-        setSalesStart(s.sales_start_at ? s.sales_start_at.slice(0, 16) : "");
-        setSalesEnd(s.sales_end_at ? s.sales_end_at.slice(0, 16) : "");
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) {
           setNotConfigured(true);
@@ -73,8 +69,6 @@ export function TicketingTab({ showId }: TicketingTabProps) {
         price_pence: Math.round(parseFloat(price || "0") * 100),
         fee_pence: Math.round(parseFloat(fee || "0") * 100),
         max_per_order: Number(maxPerOrder),
-        sales_start_at: salesStart ? new Date(salesStart).toISOString() : undefined,
-        sales_end_at: salesEnd ? new Date(salesEnd).toISOString() : undefined,
       });
       setSettings(updated);
       setNotConfigured(false);
@@ -156,8 +150,9 @@ export function TicketingTab({ showId }: TicketingTabProps) {
             />
           </div>
         </FieldWrapper>
-        <Input label="Sales start" type="datetime-local" value={salesStart} onChange={(e) => setSalesStart(e.target.value)} />
-        <Input label="Sales end" type="datetime-local" value={salesEnd} onChange={(e) => setSalesEnd(e.target.value)} />
+        <p className="sm:col-span-2 text-xs text-[#8C8C78]">
+          Sales windows are set per tour stop now — edit them on the Tour Stops tab.
+        </p>
         <div className="sm:col-span-2 flex justify-end">
           <Button type="submit" loading={saving}>
             Save ticket settings

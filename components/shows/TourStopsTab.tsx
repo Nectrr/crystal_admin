@@ -27,10 +27,23 @@ type Draft = {
   venue_address: string;
   event_start_at: string;
   capacity: string;
+  fee_pence: string;
+  sales_start_at: string;
+  sales_end_at: string;
   sort_order: string;
 };
 
-const emptyDraft: Draft = { city_name: "", venue_name: "", venue_address: "", event_start_at: "", capacity: "", sort_order: "0" };
+const emptyDraft: Draft = {
+  city_name: "",
+  venue_name: "",
+  venue_address: "",
+  event_start_at: "",
+  capacity: "",
+  fee_pence: "",
+  sales_start_at: "",
+  sales_end_at: "",
+  sort_order: "0",
+};
 
 export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const { showSuccess, showError } = useToast();
@@ -81,6 +94,9 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
       venue_address: d.venue_address || undefined,
       event_start_at: d.event_start_at ? new Date(d.event_start_at).toISOString() : undefined,
       capacity: d.capacity ? Number(d.capacity) : undefined,
+      fee_pence: d.fee_pence ? Math.round(parseFloat(d.fee_pence) * 100) : undefined,
+      sales_start_at: d.sales_start_at ? new Date(d.sales_start_at).toISOString() : undefined,
+      sales_end_at: d.sales_end_at ? new Date(d.sales_end_at).toISOString() : undefined,
       sort_order: Number(d.sort_order || 0),
     };
   }
@@ -223,6 +239,9 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
               venue_address: editingStop.venue_address ?? "",
               event_start_at: editingStop.event_start_at ? editingStop.event_start_at.slice(0, 16) : "",
               capacity: editingStop.capacity?.toString() ?? "",
+              fee_pence: editingStop.fee_pence != null ? (editingStop.fee_pence / 100).toFixed(2) : "",
+              sales_start_at: editingStop.sales_start_at ? editingStop.sales_start_at.slice(0, 16) : "",
+              sales_end_at: editingStop.sales_end_at ? editingStop.sales_end_at.slice(0, 16) : "",
               sort_order: editingStop.sort_order.toString(),
             }}
             setDraft={(d) => handleUpdate(editingStop, typeof d === "function" ? d(draft) : d)}
@@ -333,6 +352,27 @@ function StopEditor({
           type="number"
           value={local.capacity}
           onChange={(e) => setLocal((d) => ({ ...d, capacity: e.target.value }))}
+        />
+        <Input
+          label="Transaction fee (£)"
+          type="number"
+          step="0.01"
+          min={0}
+          placeholder="Uses show's default fee"
+          value={local.fee_pence}
+          onChange={(e) => setLocal((d) => ({ ...d, fee_pence: e.target.value }))}
+        />
+        <Input
+          label="Sales start"
+          type="datetime-local"
+          value={local.sales_start_at}
+          onChange={(e) => setLocal((d) => ({ ...d, sales_start_at: e.target.value }))}
+        />
+        <Input
+          label="Sales end"
+          type="datetime-local"
+          value={local.sales_end_at}
+          onChange={(e) => setLocal((d) => ({ ...d, sales_end_at: e.target.value }))}
         />
         <Input
           label="Sort order"
