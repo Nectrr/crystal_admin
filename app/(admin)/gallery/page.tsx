@@ -69,7 +69,7 @@ export default function GalleryPage() {
     setDraft({
       media_type: item.media_type,
       title: item.title,
-      event_date: item.event_date ?? "",
+      event_date: item.event_date ? item.event_date.slice(0, 10) : "",
       city_name: item.city_name ?? "",
       media_url: item.media_url,
       sort_order: item.sort_order,
@@ -83,7 +83,7 @@ export default function GalleryPage() {
     try {
       const payload: GalleryItemInput = {
         ...draft,
-        event_date: draft.event_date || undefined,
+        event_date: draft.event_date ? new Date(draft.event_date).toISOString() : undefined,
         city_name: draft.city_name || undefined,
       };
       if (editing) {
