@@ -1,16 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
+import { MediaUploadField } from "@/components/ui/MediaUploadField";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { createTourDate, deleteTourDate, type TourDate, type TourDateInput } from "@/lib/api/artists";
+import { createTourDate, updateTourDate, deleteTourDate, type TourDate, type TourDateInput } from "@/lib/api/artists";
 
 const emptyDraft: TourDateInput = {
   title: "",
@@ -30,25 +31,57 @@ const emptyDraft: TourDateInput = {
 export function TourDatesSection({ artistId, dates }: { artistId: string; dates: TourDate[] }) {
   const { showSuccess, showError } = useToast();
   const [items, setItems] = useState(dates);
-  const [adding, setAdding] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<TourDate | null>(null);
   const [draft, setDraft] = useState<TourDateInput>(emptyDraft);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TourDate | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  async function handleCreate() {
+  function openCreate() {
+    setEditing(null);
+    setDraft(emptyDraft);
+    setModalOpen(true);
+  }
+
+  function openEdit(date: TourDate) {
+    setEditing(date);
+    setDraft({
+      title: date.title,
+      venue: date.venue,
+      city: date.city,
+      event_date: date.event_date ? date.event_date.slice(0, 16) : "",
+      display_time: date.display_time ?? "",
+      price: date.price ?? "",
+      price_amount: date.price_amount ?? undefined,
+      currency: date.currency,
+      image_url: date.image_url ?? "",
+      ticket_status: date.ticket_status,
+      ticket_href: date.ticket_href ?? "",
+      sort_order: date.sort_order,
+    });
+    setModalOpen(true);
+  }
+
+  async function handleSave() {
     setSaving(true);
     try {
-      const created = await createTourDate(artistId, {
+      const payload = {
         ...draft,
         event_date: draft.event_date ? new Date(draft.event_date).toISOString() : draft.event_date,
-      });
-      setItems((prev) => [...prev, created]);
-      setAdding(false);
-      setDraft(emptyDraft);
-      showSuccess("Tour date added.");
+      };
+      if (editing) {
+        const updated = await updateTourDate(artistId, editing.id, payload);
+        setItems((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+        showSuccess("Tour date updated.");
+      } else {
+        const created = await createTourDate(artistId, payload);
+        setItems((prev) => [...prev, created]);
+        showSuccess("Tour date added.");
+      }
+      setModalOpen(false);
     } catch (err) {
-      showError(err instanceof ApiError ? err.message : "Failed to add tour date.");
+      showError(err instanceof ApiError ? err.message : "Failed to save tour date.");
     } finally {
       setSaving(false);
     }
@@ -70,6 +103,17 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
   }
 
   const tourDateColumns: DataTableColumn<TourDate>[] = [
+    {
+      key: "image_url",
+      header: "Image",
+      render: (d) =>
+        d.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={d.image_url} alt={d.title} className="h-10 w-10 rounded object-cover border border-[#EDEAE0]" />
+        ) : (
+          <span className="text-[#8C8C78] text-xs">-</span>
+        ),
+    },
     { key: "title", header: "Title", accessor: (d) => d.title, sortable: true, searchable: true, className: "font-medium" },
     {
       key: "city_venue",
@@ -94,9 +138,14 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
       key: "actions",
       header: "",
       render: (d) => (
-        <button onClick={() => setDeleteTarget(d)} className="text-red-500">
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => openEdit(d)} className="text-[#B8952F]">
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button onClick={() => setDeleteTarget(d)} className="text-red-500">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -105,12 +154,12 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[#4A4A3C]">Tour dates</h3>
-        <Button onClick={() => setAdding(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4" /> Add tour date
         </Button>
       </div>
 
-      <Modal open={adding} onClose={() => setAdding(false)} title="Add tour date" maxWidth="max-w-2xl">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit tour date" : "Add tour date"} maxWidth="max-w-2xl">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input label="Title" value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
           <Input label="Venue" value={draft.venue} onChange={(e) => setDraft((d) => ({ ...d, venue: e.target.value }))} />
@@ -154,20 +203,23 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
             value={draft.sort_order}
             onChange={(e) => setDraft((d) => ({ ...d, sort_order: Number(e.target.value) }))}
           />
+          <div className="sm:col-span-2">
+            <MediaUploadField label="Image" value={draft.image_url} onChange={(url) => setDraft((d) => ({ ...d, image_url: url }))} />
+          </div>
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => setAdding(false)}>
+            <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" loading={saving} onClick={handleCreate}>
+            <Button type="button" loading={saving} onClick={handleSave}>
               Save
             </Button>
           </div>
         </div>
       </Modal>
 
-      {items.length === 0 && !adding ? (
+      {items.length === 0 ? (
         <EmptyState message="No tour dates yet." />
-      ) : items.length > 0 ? (
+      ) : (
         <DataTable
           columns={tourDateColumns}
           rows={items}
@@ -176,7 +228,7 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
           pageSize={10}
           pageSizeOptions={[10, 20, 50]}
         />
-      ) : null}
+      )}
 
       <ConfirmDialog
         open={!!deleteTarget}

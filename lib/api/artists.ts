@@ -89,12 +89,20 @@ export function createTourDate(artistId: string, data: TourDateInput) {
   return apiFetch<TourDate>(`/api/admin/artists/${artistId}/tour-dates`, { method: "POST", body: data });
 }
 
+export function updateTourDate(artistId: string, dateId: string, data: Partial<TourDateInput>) {
+  return apiFetch<TourDate>(`/api/admin/artists/${artistId}/tour-dates/${dateId}`, { method: "PATCH", body: data });
+}
+
 export function deleteTourDate(artistId: string, dateId: string) {
   return apiFetch<void>(`/api/admin/artists/${artistId}/tour-dates/${dateId}`, { method: "DELETE" });
 }
 
 export function createProject(artistId: string, data: ProjectInput) {
   return apiFetch<Project>(`/api/admin/artists/${artistId}/projects`, { method: "POST", body: data });
+}
+
+export function updateProject(artistId: string, projectId: string, data: Partial<ProjectInput>) {
+  return apiFetch<Project>(`/api/admin/artists/${artistId}/projects/${projectId}`, { method: "PATCH", body: data });
 }
 
 export function deleteProject(artistId: string, projectId: string) {
