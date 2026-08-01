@@ -13,3 +13,13 @@ export function uploadMedia(file: File) {
     isFormData: true,
   });
 }
+
+export function uploadVideo(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<MediaUploadResponse>("/api/admin/media/upload-video", {
+    method: "POST",
+    body: form,
+    isFormData: true,
+  });
+}
