@@ -75,8 +75,12 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     if (!notifyTarget) return;
     setNotifying(true);
     try {
-      const { sent } = await notifyStopOnSale(showId, notifyTarget.id);
-      showSuccess(`Notified ${sent} registrant${sent === 1 ? "" : "s"} that ${notifyTarget.city_name} tickets are on sale.`);
+      const { sent: queued } = await notifyStopOnSale(showId, notifyTarget.id);
+      showSuccess(
+        queued > 0
+          ? `Queued ${queued} announcement email${queued === 1 ? "" : "s"} for ${notifyTarget.city_name} — they'll go out automatically over the next few minutes (and resume on their own if a daily send limit is hit).`
+          : `Everyone who registered for ${notifyTarget.city_name} was already notified.`
+      );
       setNotifyTarget(null);
     } catch (err) {
       showError(err instanceof ApiError ? err.message : "Failed to send notification.");
