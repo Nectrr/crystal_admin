@@ -58,13 +58,19 @@ export interface Project {
 
 export type ProjectInput = Omit<Project, "id" | "artist_id">;
 
+export interface ArtistProfile extends Artist {
+  tour_dates: TourDate[];
+  projects: Project[];
+}
+
 export async function listArtists(): Promise<Artist[]> {
   const data = await apiFetch<Artist[] | null>("/api/admin/artists", { method: "GET" });
   return data ?? [];
 }
 
-export function getArtist(id: string) {
-  return apiFetch<Artist>(`/api/admin/artists/${id}`, { method: "GET" });
+export async function getArtist(id: string): Promise<ArtistProfile> {
+  const data = await apiFetch<ArtistProfile>(`/api/admin/artists/${id}`, { method: "GET" });
+  return { ...data, tour_dates: data.tour_dates ?? [], projects: data.projects ?? [] };
 }
 
 export function createArtist(data: Partial<ArtistInput>) {

@@ -11,13 +11,13 @@ import { TourDatesSection } from "@/components/artists/TourDatesSection";
 import { ProjectsSection } from "@/components/artists/ProjectsSection";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { getArtist, deleteArtist, type Artist } from "@/lib/api/artists";
+import { getArtist, deleteArtist, type ArtistProfile } from "@/lib/api/artists";
 
 export default function ArtistDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { showSuccess, showError } = useToast();
-  const [artist, setArtist] = useState<Artist | null>(null);
+  const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -72,10 +72,10 @@ export default function ArtistDetailPage() {
       />
       <ArtistForm initial={artist} />
       <div className="border-t border-[#EDEAE0] pt-8">
-        <TourDatesSection artistId={artist.id} dates={[]} />
+        <TourDatesSection artistId={artist.id} dates={artist.tour_dates} />
       </div>
       <div className="border-t border-[#EDEAE0] pt-8">
-        <ProjectsSection artistId={artist.id} projects={[]} />
+        <ProjectsSection artistId={artist.id} projects={artist.projects} />
       </div>
 
       <ConfirmDialog
