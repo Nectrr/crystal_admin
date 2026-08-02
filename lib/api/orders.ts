@@ -66,6 +66,8 @@ export interface StopAttendee {
   email: string;
   paid_at?: string | null;
   created_at: string;
+  ticket_number: number;
+  order_ticket_count: number;
 }
 
 export interface NotifyStopOnSaleResponse {

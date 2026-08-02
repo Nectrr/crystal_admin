@@ -90,7 +90,24 @@ export function StopAttendeesModal({ showId, stopId, stopLabel, onClose }: StopA
   const paidCount = attendees?.filter((a) => a.order_status === "paid").length ?? 0;
 
   const columns: DataTableColumn<StopAttendee>[] = [
-    { key: "full_name", header: "Name", accessor: (a) => a.full_name, sortable: true, searchable: true, className: "font-medium" },
+    {
+      key: "full_name",
+      header: "Name",
+      accessor: (a) => a.full_name,
+      sortable: true,
+      searchable: true,
+      className: "font-medium",
+      render: (a) => (
+        <div className="flex items-center gap-2">
+          <span>{a.full_name}</span>
+          {a.order_ticket_count > 1 && (
+            <Badge color="gold">
+              Ticket {a.ticket_number} of {a.order_ticket_count}
+            </Badge>
+          )}
+        </div>
+      ),
+    },
     { key: "email", header: "Email", accessor: (a) => a.email, sortable: true, searchable: true },
     { key: "ticket_code", header: "Ticket Code", accessor: (a) => a.ticket_code, searchable: true, className: "font-mono text-xs" },
     {
