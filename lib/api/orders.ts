@@ -98,6 +98,8 @@ export interface ScanResult {
   };
   attendee_name: string;
   attendee_email: string;
+  ticket_number: number;
+  order_ticket_count: number;
 }
 
 export function scanTicket(ticket_code: string) {
