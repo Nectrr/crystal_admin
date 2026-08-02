@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LayoutGrid, Users, Newspaper, Ticket, MapPin, Mail, Wallet, Undo2 } from "lucide-react";
+import { LayoutGrid, Users, Newspaper, Ticket, MapPin, Mail, Wallet, Undo2, RotateCcw, AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Table, THead, TBody, TR, TH, TD, EmptyState, Badge } from "@/components/ui/Table";
+import { Button } from "@/components/ui/Button";
 import { getDashboardStats, type DashboardStats } from "@/lib/api/dashboard";
 import type { OrderStatus } from "@/lib/api/orders";
+import { listNotificationFailures, retryNotification, type FailedNotification } from "@/lib/api/notifications";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 
@@ -33,7 +35,9 @@ function formatMoney(pence: number, currency: string) {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const { showError } = useToast();
+  const [failures, setFailures] = useState<FailedNotification[] | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -45,8 +49,31 @@ export default function DashboardPage() {
         setLoading(false);
       }
     })();
+    loadFailures();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadFailures() {
+    try {
+      setFailures(await listNotificationFailures());
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to load failed sends.");
+      setFailures([]);
+    }
+  }
+
+  async function handleRetry(id: string) {
+    setRetryingId(id);
+    try {
+      await retryNotification(id);
+      setFailures((prev) => prev?.filter((f) => f.id !== id) ?? prev);
+      showSuccess("Queued for retry.");
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to retry.");
+    } finally {
+      setRetryingId(null);
+    }
+  }
 
   const payments = stats?.payments;
   const primaryCurrency = payments?.revenue_by_show[0]?.currency ?? "gbp";
