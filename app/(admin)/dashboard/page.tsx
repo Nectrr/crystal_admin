@@ -263,8 +263,10 @@ export default function DashboardPage() {
                   <TD className="text-[#8C8C78]">
                     {f.artist_name} — {f.tour_name} ({f.city_name})
                   </TD>
-                  <TD className="text-red-700 text-xs max-w-xs truncate" title={f.error}>
-                    {f.error}
+                  <TD className="text-red-700 text-xs max-w-xs">
+                    <span className="block truncate" title={f.error}>
+                      {f.error}
+                    </span>
                   </TD>
                   <TD>{f.attempts}</TD>
                   <TD>
