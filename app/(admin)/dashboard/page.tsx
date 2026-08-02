@@ -236,6 +236,53 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {failures !== null && failures.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <h2 className="text-base font-semibold text-[#4A4A3C]">Failed ticket-on-sale emails</h2>
+          </div>
+          <Table>
+            <THead>
+              <tr>
+                <TH>Recipient</TH>
+                <TH>Show / City</TH>
+                <TH>Error</TH>
+                <TH>Attempts</TH>
+                <TH />
+              </tr>
+            </THead>
+            <TBody>
+              {failures.map((f) => (
+                <TR key={f.id}>
+                  <TD>
+                    <div>{f.full_name}</div>
+                    <div className="text-xs text-[#8C8C78]">{f.email}</div>
+                  </TD>
+                  <TD className="text-[#8C8C78]">
+                    {f.artist_name} — {f.tour_name} ({f.city_name})
+                  </TD>
+                  <TD className="text-red-700 text-xs max-w-xs truncate" title={f.error}>
+                    {f.error}
+                  </TD>
+                  <TD>{f.attempts}</TD>
+                  <TD>
+                    <Button
+                      variant="secondary"
+                      className="!px-2 !py-1 text-xs"
+                      loading={retryingId === f.id}
+                      onClick={() => handleRetry(f.id)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> Retry
+                    </Button>
+                  </TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

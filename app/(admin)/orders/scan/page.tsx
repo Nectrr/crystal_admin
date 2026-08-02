@@ -111,7 +111,20 @@ function ScanContent() {
               </p>
               <p className="text-base text-green-900">{result.data.attendee_name}</p>
               <p className="text-sm text-green-700">{result.data.attendee_email}</p>
-              <Badge color="green">{result.data.ticket.status}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge color="green">{result.data.ticket.status}</Badge>
+                {result.data.order_ticket_count > 1 && (
+                  <Badge color="gold">
+                    Ticket {result.data.ticket_number} of {result.data.order_ticket_count}
+                  </Badge>
+                )}
+              </div>
+              {result.data.order_ticket_count > 1 && (
+                <p className="text-xs text-green-700">
+                  This buyer purchased {result.data.order_ticket_count} tickets — expect {result.data.order_ticket_count - 1} more
+                  scan{result.data.order_ticket_count - 1 === 1 ? "" : "s"} under the same name.
+                </p>
+              )}
               {result.mode === "lookup" && (
                 <p className="text-xs text-green-700">This ticket was not marked as scanned.</p>
               )}
