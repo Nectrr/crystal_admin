@@ -237,12 +237,18 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {failures !== null && failures.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <h2 className="text-base font-semibold text-[#4A4A3C]">Failed ticket-on-sale emails</h2>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className={`h-4 w-4 ${failures && failures.length > 0 ? "text-red-600" : "text-[#8C8C78]"}`} />
+          <h2 className="text-base font-semibold text-[#4A4A3C]">Failed ticket-on-sale emails</h2>
+        </div>
+        {failures === null ? (
+          <div className="flex justify-center py-6">
+            <div className="h-5 w-5 rounded-full border-2 border-[#EDEAE0] border-t-[#B8952F] animate-spin" />
           </div>
+        ) : failures.length === 0 ? (
+          <EmptyState message="No failed sends right now — every announcement email that's been attempted has gone out successfully." />
+        ) : (
           <Table>
             <THead>
               <tr>
@@ -283,8 +289,8 @@ export default function DashboardPage() {
               ))}
             </TBody>
           </Table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
