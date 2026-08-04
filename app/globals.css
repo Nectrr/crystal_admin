@@ -61,3 +61,52 @@ input, select, textarea {
 ::-webkit-scrollbar-thumb:hover {
   background-color: #d8d3c2;
 }
+
+/* Tiptap ships unstyled — this gives the article body editor readable
+   defaults matching the rest of the admin UI's spacing/typography. */
+.prose-editor p {
+  margin: 0.5em 0;
+}
+.prose-editor h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.9em 0 0.4em;
+}
+.prose-editor h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0.8em 0 0.4em;
+}
+.prose-editor ul,
+.prose-editor ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+.prose-editor ul {
+  list-style: disc;
+}
+.prose-editor ol {
+  list-style: decimal;
+}
+.prose-editor blockquote {
+  border-left: 3px solid #b8952f;
+  padding-left: 0.9em;
+  margin: 0.6em 0;
+  color: #8c8c78;
+}
+.prose-editor a {
+  color: #b8952f;
+  text-decoration: underline;
+}
+.prose-editor img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 0.5em 0;
+}
+.prose-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #8c8c78;
+  pointer-events: none;
+  height: 0;
+}

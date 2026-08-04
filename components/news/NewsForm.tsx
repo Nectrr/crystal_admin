@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createArticle, updateArticle, type Article, type ArticleInput } from "@/lib/api/news";
@@ -80,13 +81,7 @@ export function NewsForm({ initial }: { initial?: Article }) {
       </div>
 
       <Textarea label="Excerpt" value={form.excerpt ?? ""} onChange={(e) => update("excerpt", e.target.value)} />
-      <Textarea
-        label="Body"
-        hint="Plain text / markdown"
-        className="min-h-[240px]"
-        value={form.body ?? ""}
-        onChange={(e) => update("body", e.target.value)}
-      />
+      <RichTextEditor label="Body" value={form.body ?? ""} onChange={(html) => update("body", html)} />
 
       <MediaUploadField label="Featured image" value={form.featured_image} onChange={(url) => update("featured_image", url)} />
 
