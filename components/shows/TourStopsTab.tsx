@@ -75,11 +75,12 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     if (!notifyTarget) return;
     setNotifying(true);
     try {
-      const { sent: queued } = await notifyStopOnSale(showId, notifyTarget.id);
+      // force=true — this button always resends to every registrant, even
+      // ones already notified, since admins use it to re-announce a stop on
+      // demand rather than only reaching people missed the first time.
+      const { sent: queued } = await notifyStopOnSale(showId, notifyTarget.id, true);
       showSuccess(
-        queued > 0
-          ? `Queued ${queued} announcement email${queued === 1 ? "" : "s"} for ${notifyTarget.city_name} — they'll go out automatically over the next few minutes (and resume on their own if a daily send limit is hit).`
-          : `Everyone who registered for ${notifyTarget.city_name} was already notified.`
+        `Queued ${queued} announcement email${queued === 1 ? "" : "s"} for ${notifyTarget.city_name} — they'll go out automatically over the next few minutes (and resume on their own if a daily send limit is hit).`
       );
       setNotifyTarget(null);
     } catch (err) {
@@ -218,7 +219,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
             onClick={() => setNotifyTarget(stop)}
             disabled={!stop.is_on_sale}
             className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
-            title={stop.is_on_sale ? "Notify registrants tickets are on sale" : "Turn sales on before notifying"}
+            title={stop.is_on_sale ? "Resend \"tickets on sale\" email to all registrants" : "Turn sales on before notifying"}
           >
             <Megaphone className="h-4 w-4" />
           </button>
@@ -356,8 +357,8 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
       <ConfirmDialog
         open={!!notifyTarget}
         title="Notify registrants"
-        message={`Email everyone who registered interest for ${notifyTarget?.city_name} to let them know tickets are on sale now?`}
-        confirmLabel="Send notification"
+        message={`Resend the "tickets are on sale" email to everyone who registered interest for ${notifyTarget?.city_name} — including anyone already notified before?`}
+        confirmLabel="Resend to everyone"
         loading={notifying}
         onConfirm={handleNotify}
         onCancel={() => setNotifyTarget(null)}

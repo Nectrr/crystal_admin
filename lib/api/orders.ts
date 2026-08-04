@@ -74,10 +74,14 @@ export interface NotifyStopOnSaleResponse {
   sent: number;
 }
 
-export function notifyStopOnSale(showId: string, stopId: string) {
-  return apiFetch<NotifyStopOnSaleResponse>(`/api/admin/shows/${showId}/tour-stops/${stopId}/notify-on-sale`, {
-    method: "POST",
-  });
+// force=true resends to every registrant, including ones already notified —
+// the explicit "resend to everyone again" action. Default (false) only
+// reaches registrants who've never been sent this stop's announcement.
+export function notifyStopOnSale(showId: string, stopId: string, force = false) {
+  return apiFetch<NotifyStopOnSaleResponse>(
+    `/api/admin/shows/${showId}/tour-stops/${stopId}/notify-on-sale${force ? "?force=true" : ""}`,
+    { method: "POST" }
+  );
 }
 
 export async function listStopAttendees(showId: string, stopId: string): Promise<StopAttendee[]> {
