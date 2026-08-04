@@ -41,21 +41,26 @@ export function NewsForm({ initial }: { initial?: Article }) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  // Which button triggered the in-flight save — lets "Save as draft" and
+  // "Publish" each show their own loading state instead of both spinning.
+  const [savingAs, setSavingAs] = useState<"draft" | "published" | null>(null);
+
+  async function handleSave(e: React.SyntheticEvent, isActive: boolean) {
     e.preventDefault();
     setSlugError(null);
-    setLoading(true);
+    setSavingAs(isActive ? "published" : "draft");
     const payload: Partial<ArticleInput> = {
       ...form,
+      is_active: isActive,
       published_at: publishedAtLocal ? new Date(publishedAtLocal).toISOString() : undefined,
     };
     try {
       if (isEdit && initial) {
         await updateArticle(initial.id, payload);
-        showSuccess("Article updated.");
+        showSuccess(isActive ? "Article published." : "Article saved as draft.");
       } else {
         await createArticle(payload);
-        showSuccess("Article created.");
+        showSuccess(isActive ? "Article published." : "Article saved as draft.");
       }
       router.push("/news");
       router.refresh();
@@ -66,12 +71,12 @@ export function NewsForm({ initial }: { initial?: Article }) {
         showError(err instanceof ApiError ? err.message : "Something went wrong.");
       }
     } finally {
-      setLoading(false);
+      setSavingAs(null);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6 max-w-3xl">
+    <form onSubmit={(e) => handleSave(e, form.is_active ?? true)} className="flex flex-col gap-6 max-w-3xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Title" required value={form.title ?? ""} onChange={(e) => update("title", e.target.value)} />
         <Input label="Slug" required error={slugError ?? undefined} value={form.slug ?? ""} onChange={(e) => update("slug", e.target.value)} />
@@ -99,19 +104,17 @@ export function NewsForm({ initial }: { initial?: Article }) {
           onChange={(e) => setPublishedAtLocal(e.target.value)}
         />
         <p className="text-sm text-[#8C8C78] pb-2">
-          {!(form.is_active ?? true)
-            ? "Status: Draft (hidden regardless of publish date)"
-            : publishedAtLocal && new Date(publishedAtLocal) > new Date()
-              ? `Status: Scheduled for ${new Date(publishedAtLocal).toLocaleString()}`
-              : "Status: Published"}
+          {isEdit
+            ? !(initial?.is_active ?? true)
+              ? "Current status: Draft"
+              : publishedAtLocal && new Date(publishedAtLocal) > new Date()
+                ? `Current status: Scheduled for ${new Date(publishedAtLocal).toLocaleString()}`
+                : "Current status: Published"
+            : "Choose “Save as draft” to come back and publish later, or “Publish” to make it live now."}
         </p>
       </div>
 
       <div className="flex gap-6">
-        <label className="flex items-center gap-2 text-sm text-[#4A4A3C]">
-          <input type="checkbox" checked={form.is_active ?? true} onChange={(e) => update("is_active", e.target.checked)} />
-          Active
-        </label>
         <label className="flex items-center gap-2 text-sm text-[#4A4A3C]">
           <input type="checkbox" checked={form.is_featured ?? false} onChange={(e) => update("is_featured", e.target.checked)} />
           Featured
@@ -122,8 +125,22 @@ export function NewsForm({ initial }: { initial?: Article }) {
         <Button type="button" variant="secondary" onClick={() => router.back()}>
           Cancel
         </Button>
-        <Button type="submit" loading={loading}>
-          {isEdit ? "Save changes" : "Create article"}
+        <Button
+          type="button"
+          variant="secondary"
+          loading={savingAs === "draft"}
+          disabled={savingAs !== null && savingAs !== "draft"}
+          onClick={(e) => handleSave(e, false)}
+        >
+          Save as draft
+        </Button>
+        <Button
+          type="button"
+          loading={savingAs === "published"}
+          disabled={savingAs !== null && savingAs !== "published"}
+          onClick={(e) => handleSave(e, true)}
+        >
+          {isEdit && initial?.is_active ? "Save changes" : "Publish"}
         </Button>
       </div>
     </form>
