@@ -35,7 +35,6 @@ export function NewsForm({ initial }: { initial?: Article }) {
   // when it's omitted.
   const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? initial.published_at.slice(0, 16) : "");
   const [slugError, setSlugError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   function update<K extends keyof ArticleInput>(key: K, value: ArticleInput[K]) {
     setForm((f) => ({ ...f, [key]: value }));
