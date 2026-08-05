@@ -60,11 +60,11 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showId, stopId]);
 
-  async function handleCreate() {
+  async function handleCreate(d: Draft) {
     if (!stopId) return;
     setSaving(true);
     try {
-      const created = await createTier(showId, stopId, toPayload(draft));
+      const created = await createTier(showId, stopId, toPayload(d));
       setTiers((prev) => [...(prev ?? []), created]);
       setAdding(false);
       setDraft(emptyDraft);
@@ -207,7 +207,14 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
           </div>
 
           <Modal open={adding} onClose={() => setAdding(false)} title="Add pricing tier" maxWidth="max-w-lg">
-            <TierEditor draft={draft} setDraft={setDraft} onCancel={() => setAdding(false)} onSave={handleCreate} saving={saving} />
+            <TierEditor
+              draft={draft}
+              setDraft={(d) => handleCreate(typeof d === "function" ? d(draft) : d)}
+              onCancel={() => setAdding(false)}
+              onSave={() => {}}
+              saving={saving}
+              inline
+            />
           </Modal>
 
           <Modal open={!!editingTier} onClose={() => setEditingId(null)} title="Edit pricing tier" maxWidth="max-w-lg">
