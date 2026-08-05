@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Power } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
@@ -19,8 +19,8 @@ interface TierManagerModalProps {
   onClose: () => void;
 }
 
-type Draft = { name: string; price: string; quantity: string; sort_order: string };
-const emptyDraft: Draft = { name: "", price: "", quantity: "", sort_order: "0" };
+type Draft = { name: string; price: string; quantity: string; sort_order: string; is_active: boolean };
+const emptyDraft: Draft = { name: "", price: "", quantity: "", sort_order: "0", is_active: true };
 
 function toPayload(d: Draft): TierInput {
   return {
@@ -28,6 +28,7 @@ function toPayload(d: Draft): TierInput {
     price_pence: Math.round(parseFloat(d.price || "0") * 100),
     quantity: Number(d.quantity || 0),
     sort_order: Number(d.sort_order || 0),
+    is_active: d.is_active,
   };
 }
 
@@ -41,6 +42,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
   const [deleteTarget, setDeleteTarget] = useState<Tier | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!stopId) {
@@ -109,9 +111,22 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
     }
   }
 
+  async function handleToggleActive(tier: Tier) {
+    if (!stopId) return;
+    setTogglingId(tier.id);
+    try {
+      const updated = await updateTier(showId, stopId, tier.id, { is_active: !tier.is_active });
+      setTiers((prev) => prev?.map((t) => (t.id === tier.id ? updated : t)) ?? prev);
+      showSuccess(updated.is_active ? `${tier.name} is now on sale.` : `${tier.name} is no longer on sale.`);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to update tier status.");
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
   const editingTier = tiers?.find((t) => t.id === editingId) ?? null;
   const sorted = tiers?.slice().sort((a, b) => a.sort_order - b.sort_order) ?? [];
-  const activeTierId = sorted.find((t) => t.tickets_sold < t.quantity)?.id;
 
   const columns: DataTableColumn<Tier>[] = [
     {
@@ -124,7 +139,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
       render: (t) => (
         <div className="flex items-center gap-2">
           {t.name}
-          {t.id === activeTierId && <Badge color="green">On sale</Badge>}
+          <Badge color={t.is_active ? "green" : "gray"}>{t.is_active ? "On sale" : "Not on sale"}</Badge>
         </div>
       ),
     },
@@ -152,7 +167,15 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
       key: "actions",
       header: "",
       render: (tier) => (
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleToggleActive(tier)}
+            disabled={togglingId === tier.id}
+            className={tier.is_active ? "text-green-600 hover:text-green-700" : "text-[#8C8C78] hover:text-[#4A4A3C]"}
+            title={tier.is_active ? "Turn this tier off sale" : "Turn this tier on sale"}
+          >
+            <Power className="h-4 w-4" />
+          </button>
           <button onClick={() => setEditingId(tier.id)} className="text-[#B8952F]">
             <Pencil className="h-4 w-4" />
           </button>
@@ -173,7 +196,8 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
       ) : (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[#8C8C78]">
-            Tickets sell from the lowest-order tier first and move to the next automatically once one sells out. Leave this
+            Tiers marked &quot;On sale&quot; are purchasable right now — you can have more than one on sale at the same time
+            (e.g. Early Bird and General together). Turn a tier off to pull it from sale without deleting it. Leave this
             empty to sell at the show&apos;s flat price instead.
           </p>
           <div className="flex justify-end">
@@ -194,6 +218,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
                   price: (editingTier.price_pence / 100).toFixed(2),
                   quantity: editingTier.quantity.toString(),
                   sort_order: editingTier.sort_order.toString(),
+                  is_active: editingTier.is_active,
                 }}
                 setDraft={(d) => handleUpdate(editingTier, typeof d === "function" ? d(draft) : d)}
                 onCancel={() => setEditingId(null)}
@@ -270,13 +295,21 @@ function TierEditor({
           onChange={(e) => setLocal((d) => ({ ...d, quantity: e.target.value }))}
         />
         <Input
-          label="Sale order (0 sells first)"
+          label="Display order"
           type="number"
           min={0}
           value={local.sort_order}
           onChange={(e) => setLocal((d) => ({ ...d, sort_order: e.target.value }))}
         />
       </div>
+      <label className="flex items-center gap-2 text-sm text-[#4A4A3C]">
+        <input
+          type="checkbox"
+          checked={local.is_active}
+          onChange={(e) => setLocal((d) => ({ ...d, is_active: e.target.checked }))}
+        />
+        On sale
+      </label>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel

@@ -8,6 +8,7 @@ export interface Tier {
   quantity: number;
   tickets_sold: number;
   sort_order: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface TierInput {
   price_pence: number;
   quantity: number;
   sort_order: number;
+  is_active?: boolean;
 }
 
 export async function listTiers(showId: string, stopId: string): Promise<Tier[]> {
