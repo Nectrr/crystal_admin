@@ -230,3 +230,32 @@ export async function getShowOrders(showId: string): Promise<Order[]> {
   const data = await apiFetch<Order[] | null>(`/api/admin/shows/${showId}/orders`, { method: "GET" });
   return data ?? [];
 }
+
+// Ticket sales summary
+
+export interface TierSummary {
+  name: string;
+  price_pence: number;
+  tickets_sold: number;
+  quantity: number;
+}
+
+export interface StopTicketSummary {
+  tour_stop_id: string;
+  city_name: string;
+  is_on_sale: boolean;
+  tickets_sold: number;
+  capacity?: number | null;
+  tiers: TierSummary[];
+}
+
+export interface ShowTicketSummary {
+  show_id: string;
+  total_sold: number;
+  total_capacity?: number | null;
+  stops: StopTicketSummary[];
+}
+
+export function getShowTicketSummary(showId: string) {
+  return apiFetch<ShowTicketSummary>(`/api/admin/shows/${showId}/ticket-summary`, { method: "GET" });
+}

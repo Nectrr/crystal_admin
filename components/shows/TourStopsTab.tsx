@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { StopAttendeesModal } from "@/components/shows/StopAttendeesModal";
 import { TierManagerModal } from "@/components/shows/TierManagerModal";
+import { TicketSummaryPanel } from "@/components/shows/TicketSummaryPanel";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createTourStop, updateTourStop, deleteTourStop, getShowOrders, type TourStop } from "@/lib/api/shows";
@@ -268,6 +269,8 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <TicketSummaryPanel showId={showId} />
+
       <div className="flex justify-end">
         <Button onClick={() => setAdding(true)}>
           <Plus className="h-4 w-4" /> Add tour stop
