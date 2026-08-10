@@ -103,7 +103,7 @@ export function AboutPageForm({ initial }: { initial: AboutPageContent }) {
         <div className="flex flex-col gap-3">
           <Input
             label="Heading"
-            hint='e.g. "Africa\'s stage. The world\'s audience."'
+            hint={'e.g. "Africa\'s stage. The world\'s audience."'}
             value={form.vision_heading ?? ""}
             onChange={(e) => update("vision_heading", e.target.value)}
           />
