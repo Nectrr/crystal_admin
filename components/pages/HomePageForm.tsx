@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { Input, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
@@ -34,6 +35,12 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-3">Hero section</h3>
         <div className="flex flex-col gap-4">
+          <Input
+            label="Eyebrow label"
+            hint='Small label above the tagline, e.g. "WELCOME TO CRYSTALCITY"'
+            value={form.hero_eyebrow ?? ""}
+            onChange={(e) => update("hero_eyebrow", e.target.value)}
+          />
           <Input
             label="Tagline"
             hint='e.g. "Where the culture comes alive"'
@@ -71,7 +78,42 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
               onChange={(e) => update("hero_cta_secondary_url", e.target.value)}
             />
           </div>
-          <MediaUploadField label="Hero image" value={form.hero_image} onChange={(url) => update("hero_image", url)} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#4A4A3C] mb-1">Hero slider images</h3>
+        <p className="text-xs text-[#8C8C78] mb-3">Cycles through in order on the public site — add as many as you want.</p>
+        <div className="flex flex-col gap-3">
+          {(form.hero_images ?? []).map((url, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="flex-1">
+                <MediaUploadField
+                  value={url}
+                  onChange={(newUrl) => {
+                    const next = (form.hero_images ?? []).slice();
+                    next[i] = newUrl;
+                    update("hero_images", next);
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => update("hero_images", (form.hero_images ?? []).filter((_, idx) => idx !== i))}
+                className="text-red-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="secondary"
+            className="!px-2 !py-1 text-xs self-start"
+            onClick={() => update("hero_images", [...(form.hero_images ?? []), ""])}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add slide
+          </Button>
         </div>
       </div>
 

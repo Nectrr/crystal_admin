@@ -24,6 +24,8 @@ export interface ServiceItem {
 }
 
 export interface HomePageContent {
+  // Small label above the tagline, e.g. "WELCOME TO CRYSTALCITY".
+  hero_eyebrow?: string;
   hero_tagline?: string;
   hero_description?: string;
   hero_cta_primary_label?: string;
@@ -33,7 +35,9 @@ export interface HomePageContent {
   hero_cta_primary_url?: string;
   hero_cta_secondary_label?: string;
   hero_cta_secondary_url?: string;
-  hero_image?: string;
+  // The hero is a slider (3 dots visible on the live site), not a single
+  // static image — an ordered list of image URLs, cycled by the frontend.
+  hero_images?: string[];
 }
 
 export interface AboutPageContent {
