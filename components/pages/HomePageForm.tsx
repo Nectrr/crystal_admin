@@ -53,10 +53,22 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
               onChange={(e) => update("hero_cta_primary_label", e.target.value)}
             />
             <Input
+              label="Primary button link"
+              hint='Where it goes, e.g. "/events" or a full URL'
+              value={form.hero_cta_primary_url ?? ""}
+              onChange={(e) => update("hero_cta_primary_url", e.target.value)}
+            />
+            <Input
               label="Secondary button label"
               hint='e.g. "Get Early Access"'
               value={form.hero_cta_secondary_label ?? ""}
               onChange={(e) => update("hero_cta_secondary_label", e.target.value)}
+            />
+            <Input
+              label="Secondary button link"
+              hint='Where it goes, e.g. "/register" or a full URL'
+              value={form.hero_cta_secondary_url ?? ""}
+              onChange={(e) => update("hero_cta_secondary_url", e.target.value)}
             />
           </div>
           <MediaUploadField label="Hero image" value={form.hero_image} onChange={(url) => update("hero_image", url)} />

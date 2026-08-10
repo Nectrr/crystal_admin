@@ -27,7 +27,12 @@ export interface HomePageContent {
   hero_tagline?: string;
   hero_description?: string;
   hero_cta_primary_label?: string;
+  // Path or URL the button links to, e.g. "/events" or "https://...". A CTA
+  // with a label but no destination isn't a CTA — both fields travel
+  // together for each button.
+  hero_cta_primary_url?: string;
   hero_cta_secondary_label?: string;
+  hero_cta_secondary_url?: string;
   hero_image?: string;
 }
 
