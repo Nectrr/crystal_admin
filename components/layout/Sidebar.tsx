@@ -14,6 +14,7 @@ import {
   LogOut,
   QrCode,
   Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/artists", label: "Artists", icon: Users },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/gallery", label: "Gallery", icon: ImageIcon },
+  { href: "/pages", label: "Site Pages", icon: FileText },
   { href: "/tour-registrations", label: "Tour Registrations", icon: MapPin },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
