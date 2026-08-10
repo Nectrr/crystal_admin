@@ -46,6 +46,13 @@ const emptyDraft: Draft = {
   sort_order: "0",
 };
 
+// A stop with no date set is never "past" — there's nothing to compare
+// against, so it's treated as still manageable. Mirrors the backend's
+// TOUR_STOP_DATE_PASSED guard in UpdateTourStop.
+function isStopPast(stop: TourStop): boolean {
+  return !!stop.event_start_at && new Date(stop.event_start_at) < new Date();
+}
+
 export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   const { showSuccess, showError } = useToast();
   const [adding, setAdding] = useState(false);
@@ -200,27 +207,39 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     {
       key: "actions",
       header: "",
-      render: (stop) => (
+      render: (stop) => {
+        const past = isStopPast(stop);
+        return (
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleToggleOnSale(stop)}
-            disabled={togglingId === stop.id}
-            className={stop.is_on_sale ? "text-green-600 hover:text-green-700" : "text-[#8C8C78] hover:text-[#4A4A3C]"}
-            title={stop.is_on_sale ? "Turn ticket sales off" : "Turn ticket sales on"}
+            disabled={togglingId === stop.id || (past && !stop.is_on_sale)}
+            className={`${stop.is_on_sale ? "text-green-600 hover:text-green-700" : "text-[#8C8C78] hover:text-[#4A4A3C]"} disabled:opacity-30 disabled:hover:text-[#8C8C78]`}
+            title={past && !stop.is_on_sale ? "This event has already happened — can't be put on sale" : stop.is_on_sale ? "Turn ticket sales off" : "Turn ticket sales on"}
           >
             <Power className="h-4 w-4" />
           </button>
-          <button onClick={() => setAttendeesStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="View attendees">
+          <button
+            onClick={() => setAttendeesStop(stop)}
+            disabled={past}
+            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
+            title={past ? "Event has passed" : "View attendees"}
+          >
             <Users className="h-4 w-4" />
           </button>
-          <button onClick={() => setTiersStop(stop)} className="text-[#8C8C78] hover:text-[#4A4A3C]" title="Manage pricing tiers">
+          <button
+            onClick={() => setTiersStop(stop)}
+            disabled={past}
+            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
+            title={past ? "Event has passed" : "Manage pricing tiers"}
+          >
             <Tag className="h-4 w-4" />
           </button>
           <button
             onClick={() => setNotifyTarget(stop)}
-            disabled={!stop.is_on_sale}
+            disabled={past || !stop.is_on_sale}
             className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
-            title={stop.is_on_sale ? "Resend \"tickets on sale\" email to all registrants" : "Turn sales on before notifying"}
+            title={past ? "Event has passed" : stop.is_on_sale ? "Resend \"tickets on sale\" email to all registrants" : "Turn sales on before notifying"}
           >
             <Megaphone className="h-4 w-4" />
           </button>
@@ -231,7 +250,8 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
-      ),
+        );
+      },
     },
   ];
 
