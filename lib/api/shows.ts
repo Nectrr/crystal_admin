@@ -23,6 +23,10 @@ export interface Show {
   hero_image_3?: string | null;
   fan_goal?: number | null;
   is_active: boolean;
+  // Computed by the backend from tour stop dates — true once every stop
+  // has a past EventStartAt. Not settable; there's nothing to send back on
+  // create/update.
+  is_past: boolean;
   published_at: string;
   meta_title?: string | null;
   meta_description?: string | null;

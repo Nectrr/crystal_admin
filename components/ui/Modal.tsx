@@ -20,6 +20,18 @@ export function Modal({ open, onClose, title, children, maxWidth = "max-w-lg", c
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
+  // onClose is passed as an inline arrow function at every call site, so a
+  // new reference is created on every render of the parent — e.g. every
+  // keystroke in a form field inside this modal. Reading it via a ref (kept
+  // fresh below) instead of putting it in the effect's dependency array
+  // means the effect only reruns on real open/close transitions, not on
+  // every parent render — otherwise the "focus the first element" logic a
+  // few lines down would steal focus away from whatever was just typed in.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -36,7 +48,7 @@ export function Modal({ open, onClose, title, children, maxWidth = "max-w-lg", c
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key === "Tab" && panel) {
@@ -61,7 +73,7 @@ export function Modal({ open, onClose, title, children, maxWidth = "max-w-lg", c
       document.body.style.overflow = originalOverflow;
       previouslyFocused.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

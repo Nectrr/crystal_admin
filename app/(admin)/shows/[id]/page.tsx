@@ -106,6 +106,7 @@ export default function ShowDetailPage() {
         actions={
           <>
             <Badge color={show.is_active ? "green" : "gray"}>{show.is_active ? "Published" : "Draft"}</Badge>
+            {show.is_past && <Badge color="gray">Past event</Badge>}
             <Button variant="secondary" onClick={handlePublishToggle} loading={publishing}>
               {show.is_active ? "Unpublish" : "Publish"}
             </Button>

@@ -13,8 +13,12 @@ import { useToast } from "@/app/providers/ToastProvider";
 
 function StatusBadge({ s }: { s: Show }) {
   if (s.deleted_at) return <Badge color="red">Deleted</Badge>;
-  if (s.is_active) return <Badge color="green">Published</Badge>;
-  return <Badge color="gray">Draft</Badge>;
+  return (
+    <div className="flex items-center gap-1.5">
+      {s.is_active ? <Badge color="green">Published</Badge> : <Badge color="gray">Draft</Badge>}
+      {s.is_past && <Badge color="gray">Past</Badge>}
+    </div>
+  );
 }
 
 export default function ShowsPage() {
