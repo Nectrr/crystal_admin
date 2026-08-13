@@ -8,7 +8,9 @@ import { apiFetch } from "./client";
 // way since it just stores whatever object it's given.
 
 export interface ValuePillar {
-  icon: string;
+  // A real photo per card (see the Values section screenshot), not an
+  // icon — despite the field being named "icon" in earlier drafts.
+  image: string;
   title: string;
   description: string;
 }
@@ -41,15 +43,41 @@ export interface HomePageContent {
 }
 
 export interface AboutPageContent {
-  hero_tagline?: string;
+  // Hero section — small label above the headline, e.g. "ABOUT CRYSTALCITY".
+  hero_eyebrow?: string;
+  // The big 3-line headline, e.g. "Discovering talent. Building careers.
+  // Reaching the world." — one string; the frontend wraps/breaks it.
+  hero_headline?: string;
+  hero_body?: string;
+  // Single full-bleed background image behind the hero text (not a
+  // slider — see Home's hero_images for that pattern instead).
+  hero_background_image?: string;
+
   vision_heading?: string;
   vision_body?: string;
+
+  // Mission section — eyebrow label (e.g. "-OUR MISSION"), heading/body,
+  // plus the 3 stacked polaroid-style photos shown beside the text.
+  mission_eyebrow?: string;
   mission_heading?: string;
   mission_body?: string;
+  mission_images?: string[];
+
+  // Values section — eyebrow (e.g. "-WHAT WE STAND FOR"), heading (e.g.
+  // "The values behind every show."), then the 4 photo+title+description
+  // cards themselves.
+  values_eyebrow?: string;
+  values_heading?: string;
   values?: ValuePillar[];
+
+  // Services section — eyebrow (e.g. "-WHAT WE DO"), heading (e.g. "From
+  // first idea to final encore."), then the 3 title+description cards.
+  // Each card's icon is fixed on the frontend, not admin-editable — no
+  // icon/image field on ServiceItem, unlike ValuePillar.
+  services_eyebrow?: string;
+  services_heading?: string;
   services?: ServiceItem[];
   stats?: StatItem[];
-  images?: string[];
 }
 
 export interface Page<T> {
