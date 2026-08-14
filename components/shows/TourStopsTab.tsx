@@ -13,8 +13,16 @@ import { TierManagerModal } from "@/components/shows/TierManagerModal";
 import { TicketSummaryPanel } from "@/components/shows/TicketSummaryPanel";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { createTourStop, updateTourStop, deleteTourStop, getShowOrders, type TourStop } from "@/lib/api/shows";
+import {
+  createTourStop,
+  updateTourStop,
+  deleteTourStop,
+  getShowOrders,
+  type TourStop,
+  type HeroImageInput,
+} from "@/lib/api/shows";
 import { notifyStopOnSale, type Order } from "@/lib/api/orders";
+import { HeroImageField } from "@/components/ui/HeroImageField";
 
 interface TourStopsTabProps {
   showId: string;
@@ -101,7 +109,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
   async function handleToggleOnSale(stop: TourStop) {
     setTogglingId(stop.id);
     try {
-      const updated = await updateTourStop(showId, stop.id, { is_on_sale: !stop.is_on_sale });
+      const updated = await updateTourStop(showId, stop.id, { is_on_sale: !stop.is_on_sale }, undefined, false);
       onChange(stops.map((s) => (s.id === stop.id ? updated : s)));
       showSuccess(updated.is_on_sale ? `${stop.city_name} is now on sale.` : `${stop.city_name} is no longer on sale.`);
     } catch (err) {
@@ -125,10 +133,11 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     };
   }
 
-  async function handleCreate() {
+  async function handleCreate(d: Draft, coverImage: HeroImageInput | undefined) {
     setSaving(true);
     try {
-      const created = await createTourStop(showId, toPayload(draft));
+      const useMultipart = coverImage?.mode === "file";
+      const created = await createTourStop(showId, toPayload(d), coverImage, useMultipart);
       onChange([...stops, created]);
       setAdding(false);
       setDraft(emptyDraft);
@@ -140,10 +149,11 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
     }
   }
 
-  async function handleUpdate(stop: TourStop, d: Draft) {
+  async function handleUpdate(stop: TourStop, d: Draft, coverImage: HeroImageInput | undefined) {
     setSaving(true);
     try {
-      const updated = await updateTourStop(showId, stop.id, toPayload(d));
+      const useMultipart = coverImage?.mode === "file";
+      const updated = await updateTourStop(showId, stop.id, toPayload(d), coverImage, useMultipart);
       onChange(stops.map((s) => (s.id === stop.id ? updated : s)));
       setEditingId(null);
       showSuccess("Tour stop updated.");
@@ -298,7 +308,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
       </div>
 
       <Modal open={adding} onClose={() => setAdding(false)} title="Add tour stop" maxWidth="max-w-2xl">
-        <StopEditor draft={draft} setDraft={setDraft} onCancel={() => setAdding(false)} onSave={handleCreate} saving={saving} />
+        <StopEditor draft={draft} onCancel={() => setAdding(false)} onSave={handleCreate} saving={saving} />
       </Modal>
 
       <Modal open={!!editingStop} onClose={() => setEditingId(null)} title="Edit tour stop" maxWidth="max-w-2xl">
@@ -315,11 +325,10 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
               sales_end_at: editingStop.sales_end_at ? editingStop.sales_end_at.slice(0, 16) : "",
               sort_order: editingStop.sort_order.toString(),
             }}
-            setDraft={(d) => handleUpdate(editingStop, typeof d === "function" ? d(draft) : d)}
+            currentCoverImage={editingStop.cover_image}
             onCancel={() => setEditingId(null)}
-            onSave={() => {}}
+            onSave={(d, coverImage) => handleUpdate(editingStop, d, coverImage)}
             saving={saving}
-            inline
           />
         )}
       </Modal>
@@ -392,20 +401,19 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
 
 function StopEditor({
   draft,
-  setDraft,
+  currentCoverImage,
   onCancel,
   onSave,
   saving,
-  inline,
 }: {
   draft: Draft;
-  setDraft: (d: Draft | ((prev: Draft) => Draft)) => void;
+  currentCoverImage?: string | null;
   onCancel: () => void;
-  onSave: () => void;
+  onSave: (draft: Draft, coverImage: HeroImageInput | undefined) => void;
   saving: boolean;
-  inline?: boolean;
 }) {
   const [local, setLocal] = useState(draft);
+  const [coverImage, setCoverImage] = useState<HeroImageInput | undefined>(undefined);
   return (
     <div className="rounded-lg border border-[#EDEAE0] p-4 flex flex-col gap-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -465,18 +473,17 @@ function StopEditor({
           onChange={(e) => setLocal((d) => ({ ...d, sort_order: e.target.value }))}
         />
       </div>
+      <HeroImageField
+        label="Cover image (optional)"
+        currentUrl={currentCoverImage}
+        value={coverImage}
+        onChange={setCoverImage}
+      />
       <div className="flex justify-end gap-2">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button
-          type="button"
-          loading={saving}
-          onClick={() => {
-            setDraft(local);
-            if (!inline) onSave();
-          }}
-        >
+        <Button type="button" loading={saving} onClick={() => onSave(local, coverImage)}>
           Save
         </Button>
       </div>

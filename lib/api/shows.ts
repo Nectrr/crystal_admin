@@ -55,6 +55,7 @@ export interface TourStop {
   sales_start_at?: string | null;
   sales_end_at?: string | null;
   sort_order: number;
+  cover_image?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -174,19 +175,61 @@ export function unpublishShow(id: string) {
 
 // Tour stops
 
+export type TourStopFields = Omit<
+  TourStop,
+  "id" | "show_id" | "created_at" | "updated_at" | "is_on_sale" | "tickets_sold" | "cover_image"
+>;
+
+function buildTourStopFormData(fields: Partial<TourStopFields>, coverImage: HeroImageInput | undefined): FormData {
+  const form = new FormData();
+  Object.entries(fields).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) form.append(k, String(v));
+  });
+  if (coverImage) {
+    if (coverImage.mode === "file") form.append("cover_image", coverImage.value);
+    else if (coverImage.mode === "url") form.append("cover_image", coverImage.value);
+    // "none" -> omit entirely so backend leaves existing image unchanged
+  }
+  return form;
+}
+
 export function createTourStop(
   showId: string,
-  data: Omit<TourStop, "id" | "show_id" | "created_at" | "updated_at" | "is_on_sale" | "tickets_sold">
+  data: TourStopFields,
+  coverImage: HeroImageInput | undefined,
+  useMultipart: boolean
 ) {
-  return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops`, { method: "POST", body: data });
+  if (useMultipart) {
+    const form = buildTourStopFormData(data, coverImage);
+    return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops`, {
+      method: "POST",
+      body: form,
+      isFormData: true,
+    });
+  }
+  const body: Record<string, unknown> = { ...data };
+  if (coverImage && coverImage.mode === "url") body.cover_image = coverImage.value;
+  return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops`, { method: "POST", body });
 }
 
 export function updateTourStop(
   showId: string,
   stopId: string,
-  data: Partial<Omit<TourStop, "id" | "show_id" | "created_at" | "updated_at">>
+  data: Partial<TourStopFields & { is_on_sale: boolean }>,
+  coverImage: HeroImageInput | undefined,
+  useMultipart: boolean
 ) {
-  return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops/${stopId}`, { method: "PATCH", body: data });
+  if (useMultipart) {
+    const form = buildTourStopFormData(data, coverImage);
+    return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops/${stopId}`, {
+      method: "PATCH",
+      body: form,
+      isFormData: true,
+    });
+  }
+  const body: Record<string, unknown> = { ...data };
+  if (coverImage && coverImage.mode === "url") body.cover_image = coverImage.value;
+  return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops/${stopId}`, { method: "PATCH", body });
 }
 
 export function deleteTourStop(showId: string, stopId: string) {
