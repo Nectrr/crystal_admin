@@ -174,6 +174,11 @@ export default function OrdersPage() {
                     </TD>
                     <TD>
                       <Badge color={STATUS_COLOR[o.status]}>{o.status}</Badge>
+                      {o.status === "failed" && o.failure_reason && (
+                        <p className="text-xs text-red-600 mt-1 max-w-[220px]" title={o.failure_reason}>
+                          {o.failure_reason}
+                        </p>
+                      )}
                     </TD>
                     <TD className="text-[#8C8C78]">{new Date(o.created_at).toLocaleString()}</TD>
                     <TD>
@@ -200,6 +205,7 @@ export default function OrdersPage() {
                   </div>
                   <Badge color={STATUS_COLOR[o.status]}>{o.status}</Badge>
                 </div>
+                {o.status === "failed" && o.failure_reason && <p className="text-xs text-red-600">{o.failure_reason}</p>}
                 <div className="flex items-center justify-between text-sm text-[#4A4A3C] border-t border-[#EDEAE0] pt-2">
                   <span className="text-[#8C8C78]">Qty {o.quantity}</span>
                   <span className="font-medium">
