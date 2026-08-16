@@ -14,6 +14,8 @@ export function currencySymbol(code?: string | null): string {
   return CURRENCY_SYMBOLS[code.toLowerCase()] ?? code.toUpperCase();
 }
 
+const AMOUNT_FORMAT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export function formatMoney(pricePence: number, currency?: string | null): string {
-  return `${currencySymbol(currency)}${(pricePence / 100).toFixed(2)}`;
+  return `${currencySymbol(currency)}${AMOUNT_FORMAT.format(pricePence / 100)}`;
 }
