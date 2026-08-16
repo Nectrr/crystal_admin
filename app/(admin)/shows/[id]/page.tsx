@@ -133,7 +133,7 @@ export default function ShowDetailPage() {
 
       {tab === "details" && <ShowForm initial={show} />}
       {tab === "tour-stops" && (
-        <TourStopsTabWrapper showId={show.id} />
+        <TourStopsTabWrapper showId={show.id} showCurrency={show.ticketing?.currency} />
       )}
       {tab === "registrations" && <RegistrationsTab showId={show.id} />}
 
@@ -150,7 +150,7 @@ export default function ShowDetailPage() {
   );
 }
 
-function TourStopsTabWrapper({ showId }: { showId: string }) {
+function TourStopsTabWrapper({ showId, showCurrency }: { showId: string; showCurrency?: string | null }) {
   // Tour stops aren't part of the Show payload, so this small wrapper owns their own fetch state.
   const [stops, setStops] = useState<TourStop[] | null>(null);
   const { showError } = useToast();
@@ -176,5 +176,5 @@ function TourStopsTabWrapper({ showId }: { showId: string }) {
     );
   }
 
-  return <TourStopsTab showId={showId} stops={stops} onChange={setStops} />;
+  return <TourStopsTab showId={showId} stops={stops} onChange={setStops} showCurrency={showCurrency} />;
 }

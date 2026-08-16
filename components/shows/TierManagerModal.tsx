@@ -11,11 +11,13 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { listTiers, createTier, updateTier, deleteTier, type Tier, type TierInput } from "@/lib/api/tiers";
+import { currencySymbol, formatMoney } from "@/lib/currency";
 
 interface TierManagerModalProps {
   showId: string;
   stopId: string | null;
   stopLabel?: string;
+  currency?: string | null;
   onClose: () => void;
 }
 
@@ -32,7 +34,7 @@ function toPayload(d: Draft): TierInput {
   };
 }
 
-export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierManagerModalProps) {
+export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose }: TierManagerModalProps) {
   const { showSuccess, showError } = useToast();
   const [tiers, setTiers] = useState<Tier[] | null>(null);
   const [adding, setAdding] = useState(false);
@@ -148,7 +150,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
       header: "Price",
       accessor: (t) => t.price_pence,
       sortable: true,
-      render: (t) => <>£{(t.price_pence / 100).toFixed(2)}</>,
+      render: (t) => <>{formatMoney(t.price_pence, currency)}</>,
     },
     { key: "quantity", header: "Allocation", accessor: (t) => t.quantity, sortable: true },
     {
@@ -209,6 +211,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
           <Modal open={adding} onClose={() => setAdding(false)} title="Add pricing tier" maxWidth="max-w-lg">
             <TierEditor
               draft={draft}
+              currency={currency}
               setDraft={(d) => handleCreate(typeof d === "function" ? d(draft) : d)}
               onCancel={() => setAdding(false)}
               onSave={() => {}}
@@ -227,6 +230,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
                   sort_order: editingTier.sort_order.toString(),
                   is_active: editingTier.is_active,
                 }}
+                currency={currency}
                 setDraft={(d) => handleUpdate(editingTier, typeof d === "function" ? d(draft) : d)}
                 onCancel={() => setEditingId(null)}
                 onSave={() => {}}
@@ -262,6 +266,7 @@ export function TierManagerModal({ showId, stopId, stopLabel, onClose }: TierMan
 
 function TierEditor({
   draft,
+  currency,
   setDraft,
   onCancel,
   onSave,
@@ -269,6 +274,7 @@ function TierEditor({
   inline,
 }: {
   draft: Draft;
+  currency?: string | null;
   setDraft: (d: Draft | ((prev: Draft) => Draft)) => void;
   onCancel: () => void;
   onSave: () => void;
@@ -287,7 +293,7 @@ function TierEditor({
           onChange={(e) => setLocal((d) => ({ ...d, name: e.target.value }))}
         />
         <Input
-          label="Price (£)"
+          label={`Price (${currencySymbol(currency)})`}
           type="number"
           step="0.01"
           min={0.01}

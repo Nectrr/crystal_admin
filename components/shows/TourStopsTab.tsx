@@ -28,6 +28,9 @@ interface TourStopsTabProps {
   showId: string;
   stops: TourStop[];
   onChange: (stops: TourStop[]) => void;
+  // The show's default currency (from ticket settings) — used as the
+  // fallback wherever a stop has no currency override of its own.
+  showCurrency?: string | null;
 }
 
 type Draft = {
@@ -40,6 +43,7 @@ type Draft = {
   sales_start_at: string;
   sales_end_at: string;
   sort_order: string;
+  currency: string;
 };
 
 const emptyDraft: Draft = {
@@ -52,6 +56,7 @@ const emptyDraft: Draft = {
   sales_start_at: "",
   sales_end_at: "",
   sort_order: "0",
+  currency: "",
 };
 
 // A stop with no date set is never "past" — there's nothing to compare
@@ -61,7 +66,7 @@ function isStopPast(stop: TourStop): boolean {
   return !!stop.event_start_at && new Date(stop.event_start_at) < new Date();
 }
 
-export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
+export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStopsTabProps) {
   const { showSuccess, showError } = useToast();
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -130,6 +135,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
       sales_start_at: d.sales_start_at ? new Date(d.sales_start_at).toISOString() : undefined,
       sales_end_at: d.sales_end_at ? new Date(d.sales_end_at).toISOString() : undefined,
       sort_order: Number(d.sort_order || 0),
+      currency: d.currency.trim() ? d.currency.trim().toUpperCase() : undefined,
     };
   }
 
@@ -298,7 +304,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <TicketSummaryPanel showId={showId} />
+      <TicketSummaryPanel showId={showId} stops={stops} showCurrency={showCurrency} />
 
       <div className="flex justify-end">
         <Button onClick={() => setAdding(true)}>
@@ -323,6 +329,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
               sales_start_at: editingStop.sales_start_at ? editingStop.sales_start_at.slice(0, 16) : "",
               sales_end_at: editingStop.sales_end_at ? editingStop.sales_end_at.slice(0, 16) : "",
               sort_order: editingStop.sort_order.toString(),
+              currency: editingStop.currency ?? "",
             }}
             currentCoverImage={editingStop.cover_image}
             onCancel={() => setEditingId(null)}
@@ -382,6 +389,7 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
         showId={showId}
         stopId={tiersStop?.id ?? null}
         stopLabel={tiersStop?.city_name}
+        currency={tiersStop?.currency ?? showCurrency}
         onClose={() => setTiersStop(null)}
       />
 
@@ -470,6 +478,14 @@ function StopEditor({
           type="number"
           value={local.sort_order}
           onChange={(e) => setLocal((d) => ({ ...d, sort_order: e.target.value }))}
+        />
+        <Input
+          label="Currency (3-letter)"
+          maxLength={3}
+          placeholder="Uses show's default currency"
+          hint="Display-only — record what this stop actually sold in (e.g. a past event in NGN). Never sent to Stripe."
+          value={local.currency}
+          onChange={(e) => setLocal((d) => ({ ...d, currency: e.target.value }))}
         />
       </div>
       <HeroImageField

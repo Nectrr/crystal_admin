@@ -56,6 +56,11 @@ export interface TourStop {
   sales_end_at?: string | null;
   sort_order: number;
   cover_image?: string | null;
+  // Overrides the show's ticketing.currency for this stop's admin-facing
+  // display only (e.g. a past stop that actually sold in a different
+  // currency) — null means it uses the show's currency. Never affects
+  // Stripe/payment processing.
+  currency?: string | null;
   created_at?: string;
   updated_at?: string;
 }

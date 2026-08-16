@@ -5,11 +5,8 @@ import { Loader2, Ticket } from "lucide-react";
 import { Badge } from "@/components/ui/Table";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { getShowTicketSummary, type ShowTicketSummary } from "@/lib/api/shows";
-
-function formatPrice(pricePence: number) {
-  return `£${(pricePence / 100).toFixed(2)}`;
-}
+import { getShowTicketSummary, type ShowTicketSummary, type TourStop } from "@/lib/api/shows";
+import { formatMoney } from "@/lib/currency";
 
 function ProgressBar({ sold, total }: { sold: number; total: number | null | undefined }) {
   const pct = total && total > 0 ? Math.min(100, Math.round((sold / total) * 100)) : 0;
@@ -20,7 +17,13 @@ function ProgressBar({ sold, total }: { sold: number; total: number | null | und
   );
 }
 
-export function TicketSummaryPanel({ showId }: { showId: string }) {
+interface TicketSummaryPanelProps {
+  showId: string;
+  stops: TourStop[];
+  showCurrency?: string | null;
+}
+
+export function TicketSummaryPanel({ showId, stops, showCurrency }: TicketSummaryPanelProps) {
   const { showError } = useToast();
   const [summary, setSummary] = useState<ShowTicketSummary | null>(null);
 
@@ -61,36 +64,39 @@ export function TicketSummaryPanel({ showId }: { showId: string }) {
       </div>
 
       <div className="flex flex-col gap-4">
-        {summary.stops.map((stop) => (
-          <div key={stop.tour_stop_id} className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-[#4A4A3C]">{stop.city_name}</span>
-                {!stop.is_on_sale && <Badge color="gray">Not on sale</Badge>}
+        {summary.stops.map((stop) => {
+          const stopCurrency = stops.find((s) => s.id === stop.tour_stop_id)?.currency ?? showCurrency;
+          return (
+            <div key={stop.tour_stop_id} className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-[#4A4A3C]">{stop.city_name}</span>
+                  {!stop.is_on_sale && <Badge color="gray">Not on sale</Badge>}
+                </div>
+                <span className="text-[#8C8C78]">
+                  {stop.tickets_sold}
+                  {stop.capacity != null ? ` / ${stop.capacity}` : ""}
+                </span>
               </div>
-              <span className="text-[#8C8C78]">
-                {stop.tickets_sold}
-                {stop.capacity != null ? ` / ${stop.capacity}` : ""}
-              </span>
-            </div>
-            <ProgressBar sold={stop.tickets_sold} total={stop.capacity} />
+              <ProgressBar sold={stop.tickets_sold} total={stop.capacity} />
 
-            {stop.tiers.length > 0 && (
-              <div className="mt-1 flex flex-col gap-1 pl-3 border-l-2 border-[#EDEAE0]">
-                {stop.tiers.map((tier) => (
-                  <div key={tier.name} className="flex items-center justify-between text-xs text-[#8C8C78]">
-                    <span>
-                      {tier.name} <span className="text-[#B8952F]">{formatPrice(tier.price_pence)}</span>
-                    </span>
-                    <span>
-                      {tier.tickets_sold} / {tier.quantity}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+              {stop.tiers.length > 0 && (
+                <div className="mt-1 flex flex-col gap-1 pl-3 border-l-2 border-[#EDEAE0]">
+                  {stop.tiers.map((tier) => (
+                    <div key={tier.name} className="flex items-center justify-between text-xs text-[#8C8C78]">
+                      <span>
+                        {tier.name} <span className="text-[#B8952F]">{formatMoney(tier.price_pence, stopCurrency)}</span>
+                      </span>
+                      <span>
+                        {tier.tickets_sold} / {tier.quantity}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
