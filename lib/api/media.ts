@@ -23,3 +23,13 @@ export function uploadVideo(file: File) {
     isFormData: true,
   });
 }
+
+export function uploadAudio(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  return apiFetch<MediaUploadResponse>("/api/admin/media/upload-audio", {
+    method: "POST",
+    body: form,
+    isFormData: true,
+  });
+}

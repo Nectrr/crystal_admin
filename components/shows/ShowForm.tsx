@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { HeroImageField } from "@/components/ui/HeroImageField";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
@@ -138,18 +139,18 @@ export function ShowForm({ initial }: ShowFormProps) {
         />
       </div>
 
-      <Textarea
+      <RichTextEditor
         label="Description"
-        required
+        hint="Required. Renders as HTML on the public show page."
         value={fields.description}
-        onChange={(e) => update("description", e.target.value)}
+        onChange={(html) => update("description", html)}
       />
       <Input label="Subtitle" value={fields.subtitle ?? ""} onChange={(e) => update("subtitle", e.target.value)} />
-      <Textarea label="Overview" value={fields.overview ?? ""} onChange={(e) => update("overview", e.target.value)} />
-      <Textarea
+      <RichTextEditor label="Overview" value={fields.overview ?? ""} onChange={(html) => update("overview", html)} />
+      <RichTextEditor
         label="Things to know"
         value={fields.things_to_know ?? ""}
-        onChange={(e) => update("things_to_know", e.target.value)}
+        onChange={(html) => update("things_to_know", html)}
       />
       <Input
         label="Display time"
