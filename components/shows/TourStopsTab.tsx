@@ -239,9 +239,8 @@ export function TourStopsTab({ showId, stops, onChange }: TourStopsTabProps) {
           </button>
           <button
             onClick={() => setTiersStop(stop)}
-            disabled={past}
-            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
-            title={past ? "Event has passed" : "Manage pricing tiers"}
+            className="text-[#8C8C78] hover:text-[#4A4A3C]"
+            title="Manage pricing tiers"
           >
             <Tag className="h-4 w-4" />
           </button>

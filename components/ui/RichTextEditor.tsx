@@ -183,6 +183,18 @@ export function RichTextEditor({ label, hint, value, onChange }: RichTextEditorP
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }
 
+  // Blockquote/Callout hold nested block content, so after inserting one the
+  // cursor is left *inside* it — any insertContent() called next (another
+  // template, a button, etc.) would land inside that container instead of
+  // after it. Appending an empty paragraph at the document's true end
+  // (always a top-level position, never inside a container) and moving the
+  // cursor there guarantees the next action lands outside it.
+  function escapeContainer() {
+    if (!editor) return;
+    const end = editor.state.doc.content.size;
+    editor.chain().insertContentAt(end, { type: "paragraph" }).setTextSelection(end + 1).run();
+  }
+
   function insertTemplate(key: "divider" | "quote" | "callout" | "cta", close: () => void) {
     if (!editor) return;
     const chain = editor.chain().focus();
@@ -192,9 +204,11 @@ export function RichTextEditor({ label, hint, value, onChange }: RichTextEditorP
         break;
       case "quote":
         chain.insertContent("<blockquote><p>Add your quote here.</p></blockquote>").run();
+        escapeContainer();
         break;
       case "callout":
         chain.insertContent({ type: "callout", content: [{ type: "paragraph", content: [{ type: "text", text: "Add a note here." }] }] }).run();
+        escapeContainer();
         break;
       case "cta":
         chain
