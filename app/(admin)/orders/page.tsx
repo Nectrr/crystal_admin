@@ -22,6 +22,31 @@ const STATUS_COLOR: Record<OrderStatus, "gold" | "green" | "red" | "gray"> = {
 
 const LIMIT = 50;
 
+// Strips anything that isn't a digit or a decimal point, collapses to at
+// most one decimal point, and caps precision at 2 decimal places — applied
+// live as the admin types so the refund amount field can never hold
+// something like "12.5.6", a minus sign, or scientific notation ("1e5"),
+// regardless of what was typed or pasted in.
+function sanitizeAmountChars(raw: string): string {
+  let cleaned = raw.replace(/[^0-9.]/g, "");
+  const firstDot = cleaned.indexOf(".");
+  if (firstDot !== -1) {
+    cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, "");
+    const [intPart, decPart] = cleaned.split(".");
+    cleaned = decPart !== undefined ? `${intPart}.${decPart.slice(0, 2)}` : `${intPart}.`;
+  }
+  return cleaned;
+}
+
+// Clamps a sanitized amount string down to maxMajorUnits (e.g. the order
+// total) — called on blur rather than on every keystroke, so typing "5" then
+// "0" toward a smaller max doesn't fight the admin mid-entry.
+function clampAmount(raw: string, maxMajorUnits: number): string {
+  const value = parseFloat(raw);
+  if (!Number.isFinite(value)) return raw;
+  return value > maxMajorUnits ? maxMajorUnits.toFixed(2) : raw;
+}
+
 export default function OrdersPage() {
   const { showSuccess, showError } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -275,17 +300,16 @@ export default function OrdersPage() {
             </p>
             <Input
               label={`Refund amount (${refundTarget.currency.toUpperCase()})`}
-              type="number"
-              step="0.01"
-              min={0.01}
-              max={refundTarget.total_pence / 100}
+              type="text"
+              inputMode="decimal"
               value={refundAmountInput}
               onChange={(e) => {
-                setRefundAmountInput(e.target.value);
+                setRefundAmountInput(sanitizeAmountChars(e.target.value));
                 setRefundError(null);
               }}
+              onBlur={() => setRefundAmountInput((v) => clampAmount(v, refundTarget.total_pence / 100))}
               error={refundError ?? undefined}
-              hint={`Excludes the ${formatMoney(refundTarget.fee_pence, refundTarget.currency)} transaction fee by default. Adjust up to the full total if needed.`}
+              hint={`Excludes the ${formatMoney(refundTarget.fee_pence, refundTarget.currency)} transaction fee by default. Max ${(refundTarget.total_pence / 100).toFixed(2)} (the full order total).`}
             />
             <p className="text-xs text-[#8C8C78]">
               This voids all tickets on this order and releases their capacity, regardless of the amount refunded.
