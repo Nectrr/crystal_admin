@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { listOrders, refundOrder, type Order, type OrderStatus } from "@/lib/api/orders";
+import { formatMoney } from "@/lib/currency";
 
 const STATUS_COLOR: Record<OrderStatus, "gold" | "green" | "red" | "gray"> = {
   pending: "gold",
@@ -247,7 +248,12 @@ export default function OrdersPage() {
       <ConfirmDialog
         open={!!refundTarget}
         title="Refund order"
-        message={refundError ?? `Refund order for ${refundTarget?.full_name}? This cannot be undone.`}
+        message={
+          refundError ??
+          (refundTarget
+            ? `Refund ${formatMoney(refundTarget.total_pence, refundTarget.currency)} to ${refundTarget.full_name}? This refunds the full order amount and cannot be undone.`
+            : "")
+        }
         confirmLabel="Refund"
         loading={refunding}
         onConfirm={handleRefund}
