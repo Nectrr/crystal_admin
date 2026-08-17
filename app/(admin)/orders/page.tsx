@@ -86,12 +86,18 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, status, from, to]);
 
+  // The transaction fee is never refundable through this modal — the
+  // ceiling is the ticket price alone (total minus fee), not the full order
+  // total, so typing over the limit can never climb back up to include the
+  // fee.
+  function maxRefundablePence(o: Order) {
+    return o.total_pence - o.fee_pence;
+  }
+
   function openRefund(o: Order) {
     setRefundTarget(o);
     setRefundError(null);
-    // Prefills with the ticket price only, excluding the (non-refundable)
-    // transaction fee — admin can still adjust up to the full total.
-    setRefundAmountInput(((o.total_pence - o.fee_pence) / 100).toFixed(2));
+    setRefundAmountInput((maxRefundablePence(o) / 100).toFixed(2));
   }
 
   function closeRefund() {
@@ -102,8 +108,9 @@ export default function OrdersPage() {
   async function handleRefund() {
     if (!refundTarget) return;
     const amountPence = Math.round(parseFloat(refundAmountInput) * 100);
-    if (!Number.isFinite(amountPence) || amountPence <= 0 || amountPence > refundTarget.total_pence) {
-      setRefundError(`Enter an amount between 0.01 and ${(refundTarget.total_pence / 100).toFixed(2)}.`);
+    const maxPence = maxRefundablePence(refundTarget);
+    if (!Number.isFinite(amountPence) || amountPence <= 0 || amountPence > maxPence) {
+      setRefundError(`Enter an amount between 0.01 and ${(maxPence / 100).toFixed(2)}.`);
       return;
     }
     setRefunding(true);
@@ -307,9 +314,9 @@ export default function OrdersPage() {
                 setRefundAmountInput(sanitizeAmountChars(e.target.value));
                 setRefundError(null);
               }}
-              onBlur={() => setRefundAmountInput((v) => clampAmount(v, refundTarget.total_pence / 100))}
+              onBlur={() => setRefundAmountInput((v) => clampAmount(v, maxRefundablePence(refundTarget) / 100))}
               error={refundError ?? undefined}
-              hint={`Excludes the ${formatMoney(refundTarget.fee_pence, refundTarget.currency)} transaction fee by default. Max ${(refundTarget.total_pence / 100).toFixed(2)} (the full order total).`}
+              hint={`The ${formatMoney(refundTarget.fee_pence, refundTarget.currency)} transaction fee is not refundable. Max ${(maxRefundablePence(refundTarget) / 100).toFixed(2)}.`}
             />
             <p className="text-xs text-[#8C8C78]">
               This voids all tickets on this order and releases their capacity, regardless of the amount refunded.
