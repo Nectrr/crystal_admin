@@ -18,6 +18,7 @@ export interface Order {
   failure_reason?: string | null;
   paid_at?: string | null;
   refunded_at?: string | null;
+  refunded_pence?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,8 +46,12 @@ export async function listOrders(params: ListOrdersParams): Promise<ListOrdersRe
 }
 
 // The backend returns 204 No Content on success — no updated order body.
-export function refundOrder(id: string) {
-  return apiFetch<void>(`/api/admin/orders/${id}/refund`, { method: "POST" });
+// amountPence is optional; omit it to refund the full order total.
+export function refundOrder(id: string, amountPence?: number) {
+  return apiFetch<void>(`/api/admin/orders/${id}/refund`, {
+    method: "POST",
+    body: amountPence != null ? { amount_pence: amountPence } : undefined,
+  });
 }
 
 export function resendOrderEmail(id: string) {

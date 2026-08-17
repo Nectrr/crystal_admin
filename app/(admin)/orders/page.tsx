@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Table, THead, TBody, TH, TD, TR, EmptyState, Badge, TableSkeleton } from "@/components/ui/Table";
 import { Select, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Modal } from "@/components/ui/Modal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { listOrders, refundOrder, type Order, type OrderStatus } from "@/lib/api/orders";
@@ -33,6 +33,7 @@ export default function OrdersPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [refundTarget, setRefundTarget] = useState<Order | null>(null);
+  const [refundAmountInput, setRefundAmountInput] = useState("");
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
 
@@ -60,17 +61,37 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offset, status, from, to]);
 
+  function openRefund(o: Order) {
+    setRefundTarget(o);
+    setRefundError(null);
+    // Prefills with the ticket price only, excluding the (non-refundable)
+    // transaction fee — admin can still adjust up to the full total.
+    setRefundAmountInput(((o.total_pence - o.fee_pence) / 100).toFixed(2));
+  }
+
+  function closeRefund() {
+    setRefundTarget(null);
+    setRefundError(null);
+  }
+
   async function handleRefund() {
     if (!refundTarget) return;
+    const amountPence = Math.round(parseFloat(refundAmountInput) * 100);
+    if (!Number.isFinite(amountPence) || amountPence <= 0 || amountPence > refundTarget.total_pence) {
+      setRefundError(`Enter an amount between 0.01 and ${(refundTarget.total_pence / 100).toFixed(2)}.`);
+      return;
+    }
     setRefunding(true);
     setRefundError(null);
     try {
-      await refundOrder(refundTarget.id);
-      setOrders((prev) => prev.map((o) => (o.id === refundTarget.id ? { ...o, status: "refunded" } : o)));
-      showSuccess("Order refunded.");
-      setRefundTarget(null);
+      await refundOrder(refundTarget.id, amountPence);
+      setOrders((prev) =>
+        prev.map((o) => (o.id === refundTarget.id ? { ...o, status: "refunded", refunded_pence: amountPence } : o))
+      );
+      showSuccess(`Refunded ${formatMoney(amountPence, refundTarget.currency)}.`);
+      closeRefund();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
+      if (err instanceof ApiError && (err.status === 409 || err.status === 400)) {
         setRefundError(err.message || "This order can't be refunded (not paid, or already refunded).");
       } else {
         showError(err instanceof ApiError ? err.message : "Failed to refund order.");
@@ -184,7 +205,7 @@ export default function OrdersPage() {
                     <TD className="text-[#8C8C78]">{new Date(o.created_at).toLocaleString()}</TD>
                     <TD>
                       {o.status === "paid" && (
-                        <button onClick={() => setRefundTarget(o)} className="text-[#B8952F] flex items-center gap-1">
+                        <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1">
                           <RotateCcw className="h-3.5 w-3.5" /> Refund
                         </button>
                       )}
@@ -216,7 +237,7 @@ export default function OrdersPage() {
                 <div className="flex items-center justify-between text-xs text-[#8C8C78]">
                   <span>{new Date(o.created_at).toLocaleString()}</span>
                   {o.status === "paid" && (
-                    <button onClick={() => setRefundTarget(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
+                    <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
                       <RotateCcw className="h-3.5 w-3.5" /> Refund
                     </button>
                   )}
@@ -245,23 +266,42 @@ export default function OrdersPage() {
         </>
       )}
 
-      <ConfirmDialog
-        open={!!refundTarget}
-        title="Refund order"
-        message={
-          refundError ??
-          (refundTarget
-            ? `Refund ${formatMoney(refundTarget.total_pence, refundTarget.currency)} to ${refundTarget.full_name}? This refunds the full order amount and cannot be undone.`
-            : "")
-        }
-        confirmLabel="Refund"
-        loading={refunding}
-        onConfirm={handleRefund}
-        onCancel={() => {
-          setRefundTarget(null);
-          setRefundError(null);
-        }}
-      />
+      <Modal open={!!refundTarget} onClose={closeRefund} title="Refund order" maxWidth="max-w-md">
+        {refundTarget && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-[#4A4A3C]">
+              {refundTarget.full_name} · {refundTarget.quantity} ticket{refundTarget.quantity === 1 ? "" : "s"} · order
+              total {formatMoney(refundTarget.total_pence, refundTarget.currency)}
+            </p>
+            <Input
+              label={`Refund amount (${refundTarget.currency.toUpperCase()})`}
+              type="number"
+              step="0.01"
+              min={0.01}
+              max={refundTarget.total_pence / 100}
+              value={refundAmountInput}
+              onChange={(e) => {
+                setRefundAmountInput(e.target.value);
+                setRefundError(null);
+              }}
+              error={refundError ?? undefined}
+              hint={`Excludes the ${formatMoney(refundTarget.fee_pence, refundTarget.currency)} transaction fee by default. Adjust up to the full total if needed.`}
+            />
+            <p className="text-xs text-[#8C8C78]">
+              This voids all tickets on this order and releases their capacity, regardless of the amount refunded.
+              Cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={closeRefund}>
+                Cancel
+              </Button>
+              <Button type="button" variant="danger" loading={refunding} onClick={handleRefund}>
+                Refund
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
