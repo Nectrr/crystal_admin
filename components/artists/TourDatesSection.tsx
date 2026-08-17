@@ -12,6 +12,7 @@ import { MediaUploadField } from "@/components/ui/MediaUploadField";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createTourDate, updateTourDate, deleteTourDate, type TourDate, type TourDateInput } from "@/lib/api/artists";
+import { toDatetimeLocalValue } from "@/lib/datetime";
 
 const emptyDraft: TourDateInput = {
   title: "",
@@ -50,7 +51,7 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
       title: date.title,
       venue: date.venue,
       city: date.city,
-      event_date: date.event_date ? date.event_date.slice(0, 16) : "",
+      event_date: date.event_date ? toDatetimeLocalValue(date.event_date) : "",
       display_time: date.display_time ?? "",
       price: date.price ?? "",
       price_amount: date.price_amount ?? undefined,

@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/shows";
 import { notifyStopOnSale, type Order } from "@/lib/api/orders";
 import { HeroImageField } from "@/components/ui/HeroImageField";
+import { toDatetimeLocalValue } from "@/lib/datetime";
 
 interface TourStopsTabProps {
   showId: string;
@@ -323,11 +324,11 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
               city_name: editingStop.city_name,
               venue_name: editingStop.venue_name ?? "",
               venue_address: editingStop.venue_address ?? "",
-              event_start_at: editingStop.event_start_at ? editingStop.event_start_at.slice(0, 16) : "",
+              event_start_at: editingStop.event_start_at ? toDatetimeLocalValue(editingStop.event_start_at) : "",
               capacity: editingStop.capacity?.toString() ?? "",
               fee_pence: editingStop.fee_pence != null ? (editingStop.fee_pence / 100).toFixed(2) : "",
-              sales_start_at: editingStop.sales_start_at ? editingStop.sales_start_at.slice(0, 16) : "",
-              sales_end_at: editingStop.sales_end_at ? editingStop.sales_end_at.slice(0, 16) : "",
+              sales_start_at: editingStop.sales_start_at ? toDatetimeLocalValue(editingStop.sales_start_at) : "",
+              sales_end_at: editingStop.sales_end_at ? toDatetimeLocalValue(editingStop.sales_end_at) : "",
               sort_order: editingStop.sort_order.toString(),
               currency: editingStop.currency ?? "",
             }}

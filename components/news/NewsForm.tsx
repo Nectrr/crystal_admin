@@ -9,6 +9,7 @@ import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createArticle, updateArticle, type Article, type ArticleInput } from "@/lib/api/news";
+import { toDatetimeLocalValue } from "@/lib/datetime";
 
 export function NewsForm({ initial }: { initial?: Article }) {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function NewsForm({ initial }: { initial?: Article }) {
   // string) since <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm".
   // Blank means "publish now" — the backend defaults published_at to now()
   // when it's omitted.
-  const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? initial.published_at.slice(0, 16) : "");
+  const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? toDatetimeLocalValue(initial.published_at) : "");
   const [slugError, setSlugError] = useState<string | null>(null);
 
   function update<K extends keyof ArticleInput>(key: K, value: ArticleInput[K]) {

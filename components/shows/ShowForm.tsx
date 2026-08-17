@@ -16,6 +16,7 @@ import {
   type ShowFormFields,
   type HeroImageInput,
 } from "@/lib/api/shows";
+import { toDatetimeLocalValue } from "@/lib/datetime";
 
 // PricePence/FeePence are no longer admin-facing — pricing lives per tour
 // stop now (tiers + TourStop.fee_pence). The backend still requires a
@@ -51,7 +52,7 @@ export function ShowForm({ initial }: ShowFormProps) {
   });
   const [images, setImages] = useState<Partial<Record<HeroKey, HeroImageInput | undefined>>>({});
   // datetime-local value; blank = publish now (backend defaults to now()).
-  const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? initial.published_at.slice(0, 16) : "");
+  const [publishedAtLocal, setPublishedAtLocal] = useState(initial?.published_at ? toDatetimeLocalValue(initial.published_at) : "");
   const [slugError, setSlugError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
