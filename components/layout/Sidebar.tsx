@@ -15,6 +15,7 @@ import {
   QrCode,
   Image as ImageIcon,
   FileText,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/orders", label: "Orders", icon: Receipt },
   { href: "/orders/scan", label: "Door Scanner", icon: QrCode },
   { href: "/artists", label: "Artists", icon: Users },
+  { href: "/merch/products", label: "Merch", icon: ShoppingBag },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/pages", label: "Site Pages", icon: FileText },
@@ -58,7 +60,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             const isActive =
               item.href === "/orders"
                 ? pathname === "/orders"
-                : pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
+                : item.href === "/merch/products"
+                  ? (pathname?.startsWith("/merch") ?? false)
+                  : pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
             const Icon = item.icon;
             return (
               <li key={item.href}>
