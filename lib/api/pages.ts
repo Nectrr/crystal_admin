@@ -80,6 +80,10 @@ export interface AboutPageContent {
   stats?: StatItem[];
 }
 
+export interface TermsPageContent {
+  body_html?: string;
+}
+
 export interface Page<T> {
   page_key: string;
   content: T;

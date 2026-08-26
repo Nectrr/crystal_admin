@@ -7,11 +7,12 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { HomePageForm } from "@/components/pages/HomePageForm";
 import { AboutPageForm } from "@/components/pages/AboutPageForm";
+import { TermsPageForm } from "@/components/pages/TermsPageForm";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { getPage, type HomePageContent, type AboutPageContent } from "@/lib/api/pages";
+import { getPage, type HomePageContent, type AboutPageContent, type TermsPageContent } from "@/lib/api/pages";
 
-const LABELS: Record<string, string> = { home: "Homepage", about: "About page" };
+const LABELS: Record<string, string> = { home: "Homepage", about: "About page", terms: "Terms & Conditions" };
 
 export default function PageEditPage() {
   const params = useParams<{ key: string }>();
@@ -63,6 +64,8 @@ export default function PageEditPage() {
         </div>
       ) : params.key === "home" ? (
         <HomePageForm initial={(content as HomePageContent) ?? {}} />
+      ) : params.key === "terms" ? (
+        <TermsPageForm initial={(content as TermsPageContent) ?? {}} />
       ) : (
         <AboutPageForm initial={(content as AboutPageContent) ?? {}} />
       )}

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Home, Info, ChevronRight } from "lucide-react";
+import { Home, Info, FileText, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 
 const PAGES = [
   { key: "home", label: "Homepage", description: "Hero tagline, description, and call-to-action buttons", icon: Home },
   { key: "about", label: "About page", description: "Hero, vision/mission, values, services, and stats", icon: Info },
+  { key: "terms", label: "Terms & Conditions", description: "The legal terms shown on the public /terms page", icon: FileText },
 ];
 
 export default function PagesListPage() {
