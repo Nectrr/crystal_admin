@@ -80,8 +80,27 @@ export interface AboutPageContent {
   stats?: StatItem[];
 }
 
+// Mirrors the public frontend's BulletSection type exactly — the terms page
+// is a fixed 17-section numbered legal document (lists/subsections/outro
+// per section), not free-flowing rich text, so the editor has to expose
+// these same structured fields rather than one text blob.
+export interface TermsSubsection {
+  title: string;
+  list: string[];
+}
+
+export interface TermsSection {
+  id: string;
+  title: string;
+  numbered?: string;
+  content?: string;
+  list?: string[];
+  subsections?: TermsSubsection[];
+  outro?: string;
+}
+
 export interface TermsPageContent {
-  body_html?: string;
+  sections: TermsSection[];
 }
 
 export interface Page<T> {
