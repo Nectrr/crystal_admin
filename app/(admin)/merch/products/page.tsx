@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState, Badge } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
-import { listMerchProducts, type MerchProductWithVariants } from "@/lib/api/merch";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { listMerchProducts, deleteMerchProduct, type MerchProductWithVariants } from "@/lib/api/merch";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { formatMoney } from "@/lib/currency";
@@ -15,7 +16,9 @@ import { formatMoney } from "@/lib/currency";
 export default function MerchProductsPage() {
   const [products, setProducts] = useState<MerchProductWithVariants[]>([]);
   const [loading, setLoading] = useState(true);
-  const { showError } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<MerchProductWithVariants | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     (async () => {
@@ -29,6 +32,21 @@ export default function MerchProductsPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteMerchProduct(deleteTarget.id);
+      setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      showSuccess("Product deleted.");
+      setDeleteTarget(null);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to delete product.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const columns: DataTableColumn<MerchProductWithVariants>[] = [
     {
@@ -100,9 +118,14 @@ export default function MerchProductsPage() {
       key: "actions",
       header: "",
       render: (p) => (
-        <Link href={`/merch/products/${p.id}`} className="text-[#B8952F] hover:underline">
-          Edit
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/merch/products/${p.id}`} className="text-[#B8952F] hover:underline">
+            Edit
+          </Link>
+          <button onClick={() => setDeleteTarget(p)} className="text-red-500" aria-label={`Delete ${p.name}`}>
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -134,6 +157,16 @@ export default function MerchProductsPage() {
           pageSizeOptions={[10, 20, 50]}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete product"
+        message={`Delete "${deleteTarget?.name}"? This is a soft delete — its order history is kept.`}
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
