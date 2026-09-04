@@ -23,7 +23,7 @@ import {
 } from "@/lib/api/shows";
 import { notifyStopOnSale, type Order } from "@/lib/api/orders";
 import { HeroImageField } from "@/components/ui/HeroImageField";
-import { toDatetimeLocalValue } from "@/lib/datetime";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/datetime";
 
 interface TourStopsTabProps {
   showId: string;
@@ -130,11 +130,11 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
       city_name: d.city_name,
       venue_name: d.venue_name || undefined,
       venue_address: d.venue_address || undefined,
-      event_start_at: d.event_start_at ? new Date(d.event_start_at).toISOString() : undefined,
+      event_start_at: d.event_start_at ? fromDatetimeLocalValue(d.event_start_at) : undefined,
       capacity: d.capacity ? Number(d.capacity) : undefined,
       fee_pence: d.fee_pence ? Math.round(parseFloat(d.fee_pence) * 100) : undefined,
-      sales_start_at: d.sales_start_at ? new Date(d.sales_start_at).toISOString() : undefined,
-      sales_end_at: d.sales_end_at ? new Date(d.sales_end_at).toISOString() : undefined,
+      sales_start_at: d.sales_start_at ? fromDatetimeLocalValue(d.sales_start_at) : undefined,
+      sales_end_at: d.sales_end_at ? fromDatetimeLocalValue(d.sales_end_at) : undefined,
       sort_order: Number(d.sort_order || 0),
       currency: d.currency.trim() ? d.currency.trim().toUpperCase() : undefined,
     };

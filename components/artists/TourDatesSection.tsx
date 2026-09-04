@@ -12,7 +12,7 @@ import { MediaUploadField } from "@/components/ui/MediaUploadField";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createTourDate, updateTourDate, deleteTourDate, type TourDate, type TourDateInput } from "@/lib/api/artists";
-import { toDatetimeLocalValue } from "@/lib/datetime";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/datetime";
 
 const emptyDraft: TourDateInput = {
   title: "",
@@ -69,7 +69,7 @@ export function TourDatesSection({ artistId, dates }: { artistId: string; dates:
     try {
       const payload = {
         ...draft,
-        event_date: draft.event_date ? new Date(draft.event_date).toISOString() : draft.event_date,
+        event_date: draft.event_date ? fromDatetimeLocalValue(draft.event_date) : draft.event_date,
       };
       if (editing) {
         const updated = await updateTourDate(artistId, editing.id, payload);

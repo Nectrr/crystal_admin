@@ -16,7 +16,7 @@ import {
   type ShowFormFields,
   type HeroImageInput,
 } from "@/lib/api/shows";
-import { toDatetimeLocalValue } from "@/lib/datetime";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/datetime";
 
 // PricePence/FeePence are no longer admin-facing — pricing lives per tour
 // stop now (tiers + TourStop.fee_pence). The backend still requires a
@@ -72,7 +72,7 @@ export function ShowForm({ initial }: ShowFormProps) {
     setLoading(true);
     const submitFields: ShowFormFields = {
       ...fields,
-      published_at: publishedAtLocal ? new Date(publishedAtLocal).toISOString() : undefined,
+      published_at: publishedAtLocal ? fromDatetimeLocalValue(publishedAtLocal) : undefined,
     };
     try {
       const multipart = anyFileMode;

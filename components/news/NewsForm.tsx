@@ -9,7 +9,7 @@ import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { createArticle, updateArticle, type Article, type ArticleInput } from "@/lib/api/news";
-import { toDatetimeLocalValue } from "@/lib/datetime";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/datetime";
 
 export function NewsForm({ initial }: { initial?: Article }) {
   const router = useRouter();
@@ -52,7 +52,7 @@ export function NewsForm({ initial }: { initial?: Article }) {
     const payload: Partial<ArticleInput> = {
       ...form,
       is_active: isActive,
-      published_at: publishedAtLocal ? new Date(publishedAtLocal).toISOString() : undefined,
+      published_at: publishedAtLocal ? fromDatetimeLocalValue(publishedAtLocal) : undefined,
     };
     try {
       if (isEdit && initial) {
