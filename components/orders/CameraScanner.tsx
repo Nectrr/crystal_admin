@@ -22,11 +22,15 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const busyRef = useRef(false);
+  const lastScannedRef = useRef<{ code: string; time: number } | null>(null);
+  const autoResumeTimerRef = useRef<number | null>(null);
   const [state, setState] = useState<ScanState>({ phase: "starting" });
 
   const stopStream = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (autoResumeTimerRef.current) window.clearTimeout(autoResumeTimerRef.current);
     rafRef.current = null;
+    autoResumeTimerRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
   }, []);
@@ -56,21 +60,23 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
     });
 
     if (code && code.data) {
-      busyRef.current = true;
-      setState({ phase: "scanning" });
-
       let finalCode = code.data;
       try {
-        // Handle case where QR code contains the full URL
         const url = new URL(code.data);
         const urlCode = url.searchParams.get("code");
-        if (urlCode) {
-          finalCode = urlCode;
-        }
-      } catch {
-        // Not a URL, use raw string
-      }
+        if (urlCode) finalCode = urlCode;
+      } catch {}
 
+      const now = Date.now();
+      const last = lastScannedRef.current;
+      if (last && last.code === finalCode && now - last.time < 3000) {
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      
+      lastScannedRef.current = { code: finalCode, time: now };
+      busyRef.current = true;
+      setState({ phase: "scanning" });
       handleDetected(finalCode);
       return;
     }
@@ -82,10 +88,13 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
   async function handleDetected(ticketCode: string) {
     try {
       const data = await scanTicket(ticketCode);
-      stopStream();
       setState({ phase: "success", data });
+      
+      if (autoResumeTimerRef.current) window.clearTimeout(autoResumeTimerRef.current);
+      autoResumeTimerRef.current = window.setTimeout(() => {
+        scanAnother();
+      }, 2000);
     } catch (err) {
-      stopStream();
       if (err instanceof ApiError && err.status === 409) {
         setState({ phase: "already_scanned", message: err.message });
       } else {
@@ -125,7 +134,11 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
   }, []);
 
   function scanAnother() {
-    start();
+    if (autoResumeTimerRef.current) window.clearTimeout(autoResumeTimerRef.current);
+    setState({ phase: "scanning" });
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
   }
 
   const showLiveFeed = state.phase === "starting" || state.phase === "ready" || state.phase === "scanning";
@@ -148,23 +161,21 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center px-6 pb-10 text-center">
-        {showLiveFeed && (
-          <>
-            <p className="text-[11px] uppercase tracking-widest text-[#B8952F] mb-2">
-              {state.phase === "starting" ? "Ready to scan" : state.phase === "scanning" ? "Scanning" : "Ready to scan"}
-            </p>
-            <h2 className="text-xl font-semibold mb-1">
-              {state.phase === "scanning" ? "Scanning QR code" : "Scan to confirm entry"}
-            </h2>
-            <p className="text-sm text-[#B8AE7A] mb-6">Hold the QR code steady in the frame</p>
+        <div className={showLiveFeed ? "flex flex-col items-center justify-center" : "hidden"}>
+          <p className="text-[11px] uppercase tracking-widest text-[#B8952F] mb-2">
+            {state.phase === "starting" ? "Ready to scan" : state.phase === "scanning" ? "Scanning" : "Ready to scan"}
+          </p>
+          <h2 className="text-xl font-semibold mb-1">
+            {state.phase === "scanning" ? "Scanning QR code" : "Scan to confirm entry"}
+          </h2>
+          <p className="text-sm text-[#B8AE7A] mb-6">Hold the QR code steady in the frame</p>
 
-            <div className="relative h-64 w-64 max-w-full overflow-hidden rounded-2xl bg-black">
-              <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
-              <canvas ref={canvasRef} className="hidden" />
-              <ScannerFrame />
-            </div>
-          </>
-        )}
+          <div className="relative h-64 w-64 max-w-full overflow-hidden rounded-2xl bg-black">
+            <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
+            <canvas ref={canvasRef} className="hidden" />
+            <ScannerFrame />
+          </div>
+        </div>
 
         {state.phase === "camera_error" && (
           <ResultCard
