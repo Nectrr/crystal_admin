@@ -89,11 +89,6 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
     try {
       const data = await scanTicket(ticketCode);
       setState({ phase: "success", data });
-      
-      if (autoResumeTimerRef.current) window.clearTimeout(autoResumeTimerRef.current);
-      autoResumeTimerRef.current = window.setTimeout(() => {
-        scanAnother();
-      }, 2000);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setState({ phase: "already_scanned", message: err.message });
