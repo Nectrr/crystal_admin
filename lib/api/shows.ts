@@ -241,6 +241,16 @@ export function deleteTourStop(showId: string, stopId: string) {
   return apiFetch<void>(`/api/admin/shows/${showId}/tour-stops/${stopId}`, { method: "DELETE" });
 }
 
+// Increments the stop's capacity by `amount` instead of replacing it —
+// avoids the caller having to read the current capacity first and race a
+// concurrent ticket sale or another admin's edit.
+export function addTourStopCapacity(showId: string, stopId: string, amount: number) {
+  return apiFetch<TourStop>(`/api/admin/shows/${showId}/tour-stops/${stopId}/add-capacity`, {
+    method: "POST",
+    body: { amount },
+  });
+}
+
 // Ticket settings
 
 export function getTicketSettings(showId: string) {

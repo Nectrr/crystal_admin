@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Pencil, Users, Tag, Power, Megaphone } from "lucide-react";
+import { Plus, Trash2, Pencil, Users, Tag, Power, Megaphone, TicketPlus } from "lucide-react";
 import { Badge, EmptyState } from "@/components/ui/Table";
 import { DataTable, type DataTableColumn } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,7 @@ import {
   createTourStop,
   updateTourStop,
   deleteTourStop,
+  addTourStopCapacity,
   getShowOrders,
   type TourStop,
   type HeroImageInput,
@@ -82,6 +83,9 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
   const [notifyTarget, setNotifyTarget] = useState<TourStop | null>(null);
   const [notifying, setNotifying] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [capacityTarget, setCapacityTarget] = useState<TourStop | null>(null);
+  const [capacityAmount, setCapacityAmount] = useState("");
+  const [addingCapacity, setAddingCapacity] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -122,6 +126,31 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
       showError(err instanceof ApiError ? err.message : "Failed to update sale status.");
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function handleAddCapacity() {
+    if (!capacityTarget) return;
+    const amount = Number(capacityAmount);
+    if (!Number.isFinite(amount) || amount < 1) {
+      showError("Enter a number of tickets to add (1 or more).");
+      return;
+    }
+    setAddingCapacity(true);
+    try {
+      const updated = await addTourStopCapacity(showId, capacityTarget.id, Math.floor(amount));
+      onChange(stops.map((s) => (s.id === capacityTarget.id ? updated : s)));
+      showSuccess(`Added ${Math.floor(amount)} tickets to ${capacityTarget.city_name} — capacity is now ${updated.capacity}.`);
+      setCapacityTarget(null);
+      setCapacityAmount("");
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "UNLIMITED_CAPACITY") {
+        showError(`${capacityTarget.city_name} has unlimited capacity — there's nothing to add to.`);
+      } else {
+        showError(err instanceof ApiError ? err.message : "Failed to add tickets.");
+      }
+    } finally {
+      setAddingCapacity(false);
     }
   }
 
@@ -250,6 +279,17 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
             title="Manage pricing tiers"
           >
             <Tag className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => {
+              setCapacityAmount("");
+              setCapacityTarget(stop);
+            }}
+            disabled={stop.capacity == null}
+            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
+            title={stop.capacity == null ? "This stop has unlimited capacity" : "Add more tickets"}
+          >
+            <TicketPlus className="h-4 w-4" />
           </button>
           <button
             onClick={() => setNotifyTarget(stop)}
@@ -385,6 +425,34 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
         stopLabel={attendeesStop?.city_name}
         onClose={() => setAttendeesStop(null)}
       />
+
+      <Modal
+        open={!!capacityTarget}
+        onClose={() => setCapacityTarget(null)}
+        title={`Add tickets${capacityTarget ? ` — ${capacityTarget.city_name}` : ""}`}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-[#8C8C78]">
+            Current capacity: {capacityTarget?.capacity ?? "-"} ({capacityTarget?.tickets_sold ?? 0} sold)
+          </p>
+          <Input
+            label="Tickets to add"
+            type="number"
+            min={1}
+            autoFocus
+            value={capacityAmount}
+            onChange={(e) => setCapacityAmount(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setCapacityTarget(null)}>
+              Cancel
+            </Button>
+            <Button type="button" loading={addingCapacity} onClick={handleAddCapacity}>
+              Add tickets
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <TierManagerModal
         showId={showId}
