@@ -30,6 +30,7 @@ export function NewsForm({ initial }: { initial?: Article }) {
     meta_title: initial?.meta_title ?? "",
     meta_description: initial?.meta_description ?? "",
   });
+  
   // datetime-local input value, separate from form.published_at (an ISO
   // string) since <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm".
   // Blank means "publish now" — the backend defaults published_at to now()
