@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Trash2, Pencil, Power } from "lucide-react";
+import { Loader2, Plus, Trash2, Pencil, Power, Ban } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
@@ -45,6 +45,8 @@ export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose 
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [soldOutTarget, setSoldOutTarget] = useState<Tier | null>(null);
+  const [markingSoldOut, setMarkingSoldOut] = useState(false);
 
   useEffect(() => {
     if (!stopId) {
@@ -127,6 +129,25 @@ export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose 
     }
   }
 
+  async function handleMarkSoldOut() {
+    if (!stopId || !soldOutTarget) return;
+    setMarkingSoldOut(true);
+    try {
+      // There's no independent "sold out" flag — a tier's status is derived
+      // from tickets_sold >= quantity, so the only way to force that state
+      // is to drop the allocation down to however many have already sold.
+      // Raising the allocation back up later reopens it.
+      const updated = await updateTier(showId, stopId, soldOutTarget.id, { quantity: soldOutTarget.tickets_sold });
+      setTiers((prev) => prev?.map((t) => (t.id === soldOutTarget.id ? updated : t)) ?? prev);
+      showSuccess(`${soldOutTarget.name} is now marked sold out.`);
+      setSoldOutTarget(null);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to mark tier as sold out.");
+    } finally {
+      setMarkingSoldOut(false);
+    }
+  }
+
   const editingTier = tiers?.find((t) => t.id === editingId) ?? null;
   const sorted = tiers?.slice().sort((a, b) => a.sort_order - b.sort_order) ?? [];
 
@@ -177,6 +198,20 @@ export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose 
             title={tier.is_active ? "Turn this tier off sale" : "Turn this tier on sale"}
           >
             <Power className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setSoldOutTarget(tier)}
+            disabled={tier.tickets_sold < 1 || tier.tickets_sold >= tier.quantity}
+            className="text-[#8C8C78] hover:text-red-600 disabled:opacity-30 disabled:hover:text-[#8C8C78]"
+            title={
+              tier.tickets_sold < 1
+                ? "No tickets sold yet for this tier"
+                : tier.tickets_sold >= tier.quantity
+                  ? "Already sold out"
+                  : "Mark as sold out"
+            }
+          >
+            <Ban className="h-4 w-4" />
           </button>
           <button onClick={() => setEditingId(tier.id)} className="text-[#B8952F]">
             <Pencil className="h-4 w-4" />
@@ -259,6 +294,16 @@ export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose 
           setDeleteTarget(null);
           setDeleteError(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={!!soldOutTarget}
+        title="Mark tier as sold out"
+        message={`Set "${soldOutTarget?.name}"'s allocation down to ${soldOutTarget?.tickets_sold} (its current sold count)? It'll immediately show as sold out. You can raise the allocation again later to reopen it.`}
+        confirmLabel="Mark sold out"
+        loading={markingSoldOut}
+        onConfirm={handleMarkSoldOut}
+        onCancel={() => setSoldOutTarget(null)}
       />
     </Modal>
   );
