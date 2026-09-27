@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
   FileText,
   ShoppingBag,
+  Handshake,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/orders/scan", label: "Door Scanner", icon: QrCode },
   { href: "/artists", label: "Artists", icon: Users },
   { href: "/merch/products", label: "Merch", icon: ShoppingBag },
+  { href: "/affiliates", label: "Affiliates", icon: Handshake },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/pages", label: "Site Pages", icon: FileText },
