@@ -17,6 +17,7 @@ import {
   FileText,
   ShoppingBag,
   Handshake,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/affiliates", label: "Affiliates", icon: Handshake },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/gallery", label: "Gallery", icon: ImageIcon },
+  { href: "/brands", label: "Our Universe", icon: Sparkles },
   { href: "/pages", label: "Site Pages", icon: FileText },
   { href: "/tour-registrations", label: "Tour Registrations", icon: MapPin },
   { href: "/settings", label: "Settings", icon: Settings },
