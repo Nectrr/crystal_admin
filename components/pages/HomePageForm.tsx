@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Input, Textarea } from "@/components/ui/Field";
+import { Input } from "@/components/ui/Field";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
 import { ApiError } from "@/lib/api/client";
@@ -35,22 +36,22 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-3">Hero section</h3>
         <div className="flex flex-col gap-4">
-          <Input
+          <RichTextEditor
             label="Eyebrow label"
             hint='Small label above the tagline, e.g. "WELCOME TO CRYSTALCITY"'
             value={form.hero_eyebrow ?? ""}
-            onChange={(e) => update("hero_eyebrow", e.target.value)}
+            onChange={(html) => update("hero_eyebrow", html)}
           />
-          <Input
+          <RichTextEditor
             label="Tagline"
             hint='e.g. "Where the culture comes alive"'
             value={form.hero_tagline ?? ""}
-            onChange={(e) => update("hero_tagline", e.target.value)}
+            onChange={(html) => update("hero_tagline", html)}
           />
-          <Textarea
+          <RichTextEditor
             label="Description"
             value={form.hero_description ?? ""}
-            onChange={(e) => update("hero_description", e.target.value)}
+            onChange={(html) => update("hero_description", html)}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
