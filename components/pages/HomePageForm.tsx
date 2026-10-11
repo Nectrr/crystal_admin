@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/Field";
+import { Input, Select } from "@/components/ui/Field";
+import { GalleryMediaField } from "@/components/gallery/GalleryMediaField";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
@@ -115,6 +116,30 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
           >
             <Plus className="h-3.5 w-3.5" /> Add slide
           </Button>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-[#4A4A3C] mb-1">Banner</h3>
+        <p className="text-xs text-[#8C8C78] mb-3">The banner section on the homepage — upload an image or a video.</p>
+        <div className="flex flex-col gap-3">
+          <Select
+            label="Media type"
+            value={form.banner_media_type ?? "image"}
+            onChange={(e) => {
+              // Switching type invalidates the uploaded file (an image URL can't play as a video).
+              update("banner_media_type", e.target.value as "image" | "video");
+              update("banner_media_url", "");
+            }}
+          >
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+          </Select>
+          <GalleryMediaField
+            mediaType={form.banner_media_type ?? "image"}
+            value={form.banner_media_url ?? ""}
+            onChange={(url) => update("banner_media_url", url)}
+          />
         </div>
       </div>
 

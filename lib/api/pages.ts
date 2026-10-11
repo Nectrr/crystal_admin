@@ -40,6 +40,10 @@ export interface HomePageContent {
   // The hero is a slider (3 dots visible on the live site), not a single
   // static image — an ordered list of image URLs, cycled by the frontend.
   hero_images?: string[];
+  // Banner section further down the homepage — a single image or video.
+  // The frontend picks <img> vs <video> from banner_media_type.
+  banner_media_type?: "image" | "video";
+  banner_media_url?: string;
 }
 
 export interface AboutPageContent {
