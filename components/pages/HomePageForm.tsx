@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Input, Select } from "@/components/ui/Field";
-import { GalleryMediaField } from "@/components/gallery/GalleryMediaField";
+import { Input } from "@/components/ui/Field";
+// import { Select } from "@/components/ui/Field";
+// import { GalleryMediaField } from "@/components/gallery/GalleryMediaField";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
@@ -119,6 +120,7 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
         </div>
       </div>
 
+      {/* Banner image/video upload — hidden for now.
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-1">Banner</h3>
         <p className="text-xs text-[#8C8C78] mb-3">The banner section on the homepage — upload an image or a video.</p>
@@ -142,6 +144,7 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
           />
         </div>
       </div>
+      */}
 
       <div className="flex justify-end">
         <Button loading={saving} onClick={handleSave}>
