@@ -141,6 +141,8 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
             mediaType={form.banner_media_type ?? "image"}
             value={form.banner_media_url ?? ""}
             onChange={(url) => update("banner_media_url", url)}
+            // Videos capped at 1MB so the homepage stays fast to load.
+            maxBytes={(form.banner_media_type ?? "image") === "video" ? 1024 * 1024 : undefined}
           />
         </div>
       </div>

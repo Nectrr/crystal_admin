@@ -16,9 +16,12 @@ interface GalleryMediaFieldProps {
   mediaType: GalleryMediaType;
   value: string;
   onChange: (url: string) => void;
+  // Optional client-side size cap, tighter than the server's upload limit
+  // (e.g. the homepage banner video, which must stay small to load fast).
+  maxBytes?: number;
 }
 
-export function GalleryMediaField({ mediaType, value, onChange }: GalleryMediaFieldProps) {
+export function GalleryMediaField({ mediaType, value, onChange, maxBytes }: GalleryMediaFieldProps) {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { showError } = useToast();
@@ -28,6 +31,10 @@ export function GalleryMediaField({ mediaType, value, onChange }: GalleryMediaFi
     if (!file) return;
     if (!spec.types.includes(file.type)) {
       showError(`Please choose a valid ${spec.label} file.`);
+      return;
+    }
+    if (maxBytes && file.size > maxBytes) {
+      showError(`File is too large — max ${Math.round((maxBytes / (1024 * 1024)) * 10) / 10}MB.`);
       return;
     }
     setLoading(true);

@@ -1,8 +1,12 @@
 import { apiFetch } from "./client";
 
+// "paystack" is for currencies Stripe can't charge (e.g. NGN).
+export type PaymentProvider = "stripe" | "paystack";
+
 export interface TicketSettings {
   show_id: string;
   currency: string;
+  payment_provider?: PaymentProvider;
   price_pence: number;
   fee_pence: number;
   max_per_order: number;
@@ -23,6 +27,8 @@ export interface Show {
   hero_image_3?: string | null;
   fan_goal?: number | null;
   is_active: boolean;
+  // Shown in the storefront's "Featured Events".
+  is_featured?: boolean;
   // Computed by the backend from tour stop dates — true once every stop
   // has a past EventStartAt. Not settable; there's nothing to send back on
   // create/update.
@@ -97,6 +103,7 @@ export interface ShowFormFields {
   description: string;
   fan_goal?: number | null;
   is_active?: boolean;
+  is_featured?: boolean;
   published_at?: string | null;
   meta_title?: string | null;
   meta_description?: string | null;
@@ -259,6 +266,7 @@ export function getTicketSettings(showId: string) {
 
 export interface TicketSettingsInput {
   currency: string;
+  payment_provider?: PaymentProvider;
   price_pence: number;
   fee_pence: number;
   max_per_order: number;

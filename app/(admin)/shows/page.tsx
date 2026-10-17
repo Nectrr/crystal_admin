@@ -17,6 +17,7 @@ function StatusBadge({ s }: { s: Show }) {
     <div className="flex items-center gap-1.5">
       {s.is_active ? <Badge color="green">Published</Badge> : <Badge color="gray">Draft</Badge>}
       {s.is_past && <Badge color="gray">Past</Badge>}
+      {s.is_featured && <Badge color="gold">Featured</Badge>}
     </div>
   );
 }

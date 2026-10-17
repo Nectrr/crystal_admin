@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Field";
+import { Input, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { HeroImageField } from "@/components/ui/HeroImageField";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -15,6 +15,7 @@ import {
   type Show,
   type ShowFormFields,
   type HeroImageInput,
+  type PaymentProvider,
 } from "@/lib/api/shows";
 import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/lib/datetime";
 
@@ -49,6 +50,7 @@ export function ShowForm({ initial }: ShowFormProps) {
     display_time: initial?.display_time ?? "",
     meta_title: initial?.meta_title ?? "",
     meta_description: initial?.meta_description ?? "",
+    is_featured: initial?.is_featured ?? false,
   });
   const [images, setImages] = useState<Partial<Record<HeroKey, HeroImageInput | undefined>>>({});
   // datetime-local value; blank = publish now (backend defaults to now()).
@@ -58,6 +60,7 @@ export function ShowForm({ initial }: ShowFormProps) {
 
   const [currency, setCurrency] = useState(initial?.ticketing?.currency ?? "GBP");
   const [maxPerOrder, setMaxPerOrder] = useState(String(initial?.ticketing?.max_per_order ?? 10));
+  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>(initial?.ticketing?.payment_provider ?? "stripe");
 
   function update<K extends keyof ShowFormFields>(key: K, value: ShowFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }));
@@ -90,6 +93,7 @@ export function ShowForm({ initial }: ShowFormProps) {
       }
       await upsertTicketSettings(showId, {
         currency: currency.toUpperCase(),
+        payment_provider: paymentProvider,
         price_pence: initial?.ticketing?.price_pence ?? PLACEHOLDER_PRICE_PENCE,
         fee_pence: initial?.ticketing?.fee_pence ?? 0,
         max_per_order: Number(maxPerOrder),
@@ -192,8 +196,26 @@ export function ShowForm({ initial }: ShowFormProps) {
             value={maxPerOrder}
             onChange={(e) => setMaxPerOrder(e.target.value)}
           />
+          <Select
+            label="Payment provider"
+            hint="Use Paystack for currencies Stripe doesn't support, e.g. NGN."
+            value={paymentProvider}
+            onChange={(e) => setPaymentProvider(e.target.value as PaymentProvider)}
+          >
+            <option value="stripe">Stripe</option>
+            <option value="paystack">Paystack</option>
+          </Select>
         </div>
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-[#4A4A3C]">
+        <input
+          type="checkbox"
+          checked={fields.is_featured ?? false}
+          onChange={(e) => update("is_featured", e.target.checked)}
+        />
+        Featured — show this event in Featured Events on the homepage
+      </label>
 
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-2">Hero images</h3>
