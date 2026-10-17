@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/Field";
-// import { Select } from "@/components/ui/Field";
-// import { GalleryMediaField } from "@/components/gallery/GalleryMediaField";
+import { Input, Select } from "@/components/ui/Field";
+import { GalleryMediaField } from "@/components/gallery/GalleryMediaField";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/Button";
 import { MediaUploadField } from "@/components/ui/MediaUploadField";
@@ -120,7 +119,6 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
         </div>
       </div>
 
-      {/* Banner image/video upload — hidden for now.
       <div>
         <h3 className="text-sm font-semibold text-[#4A4A3C] mb-1">Banner</h3>
         <p className="text-xs text-[#8C8C78] mb-3">The banner section on the homepage — upload an image or a video.</p>
@@ -137,16 +135,15 @@ export function HomePageForm({ initial }: { initial: HomePageContent }) {
             <option value="image">Image</option>
             <option value="video">Video</option>
           </Select>
+          {/* Videos capped at 1MB so the homepage stays fast to load. */}
           <GalleryMediaField
             mediaType={form.banner_media_type ?? "image"}
             value={form.banner_media_url ?? ""}
             onChange={(url) => update("banner_media_url", url)}
-            // Videos capped at 1MB so the homepage stays fast to load.
             maxBytes={(form.banner_media_type ?? "image") === "video" ? 1024 * 1024 : undefined}
           />
         </div>
       </div>
-      */}
 
       <div className="flex justify-end">
         <Button loading={saving} onClick={handleSave}>
