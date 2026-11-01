@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Copy, Plus } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/ui/Table";
@@ -11,15 +11,16 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { PrivateLinkFormModal } from "@/components/private-links/PrivateLinkFormModal";
 import { PrivateLinkStatusBadge, copyLink } from "@/components/private-links/shared";
-import { listPrivateLinks, privateLinkStatus, type ApplyResult, type PrivateLink } from "@/lib/api/privateLinks";
+import { listPrivateLinks, privateLinkStatus, type PrivateLink } from "@/lib/api/privateLinks";
 import { ApiError } from "@/lib/api/client";
+import { formatMoney } from "@/lib/currency";
 import { useToast } from "@/app/providers/ToastProvider";
 
 export default function PrivateLinksPage() {
   const [links, setLinks] = useState<PrivateLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState<ApplyResult | null>(null);
+  const [created, setCreated] = useState<PrivateLink | null>(null);
   const { showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -47,25 +48,52 @@ export default function PrivateLinksPage() {
         </Link>
       ),
     },
-    { key: "tier", header: "Tier", accessor: (l) => l.tier_name, searchable: true },
+    {
+      key: "event",
+      header: "Event",
+      accessor: (l) => `${l.artist_name} ${l.city_name}`,
+      searchable: true,
+      render: (l) => (
+        <div>
+          <p>
+            {l.artist_name} — {l.city_name}
+          </p>
+          {l.event_start_at && (
+            <p className="text-xs text-[#8C8C78]">{format(new Date(l.event_start_at), "d MMM yyyy")}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "tier",
+      header: "Tier",
+      accessor: (l) => l.tier_name,
+      searchable: true,
+      render: (l) => (
+        <div>
+          <p>{l.tier_name}</p>
+          <p className="text-xs text-[#8C8C78]">{formatMoney(l.price_pence, l.currency)}</p>
+        </div>
+      ),
+    },
     {
       key: "sold",
       header: "Sold",
-      accessor: (l) => l.tickets_used,
+      accessor: (l) => l.tickets_sold,
       sortable: true,
       render: (l) => (
         <span>
-          {l.tickets_used} <span className="text-[#8C8C78]">/ {l.max_tickets ?? "∞"}</span>
+          {l.tickets_sold} <span className="text-[#8C8C78]">/ {l.quantity}</span>
         </span>
       ),
     },
-    { key: "events", header: "Events", accessor: (l) => l.stop_count, sortable: true },
     {
       key: "expires",
       header: "Expires",
       accessor: (l) => (l.expires_at ? new Date(l.expires_at) : null),
       sortable: true,
-      render: (l) => (l.expires_at ? format(new Date(l.expires_at), "d MMM yyyy") : <span className="text-[#8C8C78]">Never</span>),
+      render: (l) =>
+        l.expires_at ? format(new Date(l.expires_at), "d MMM yyyy") : <span className="text-[#8C8C78]">Never</span>,
     },
     {
       key: "status",
@@ -100,7 +128,7 @@ export default function PrivateLinksPage() {
     <div>
       <PageHeader
         title="Private Links"
-        description="Hidden ticket tiers (e.g. a private Early Bird) that only people with the link can buy"
+        description="Hidden ticket tiers for an event (e.g. a private Early Bird) that only people with the link can buy"
         actions={
           <Button onClick={() => setCreating(true)}>
             <Plus className="h-4 w-4" /> New private link
@@ -111,7 +139,7 @@ export default function PrivateLinksPage() {
       {!loading && links.length === 0 ? (
         <EmptyState
           title="No private links yet"
-          message="Create one to add a hidden tier to every upcoming event, then send the link to the people it's for."
+          message="Create one for an event, then send the link to the people it's for."
         />
       ) : (
         <DataTable
@@ -129,9 +157,9 @@ export default function PrivateLinksPage() {
       <PrivateLinkFormModal
         open={creating}
         onClose={() => setCreating(false)}
-        onCreated={(result) => {
-          setLinks((prev) => [result.link, ...prev]);
-          setCreated(result);
+        onCreated={(link) => {
+          setLinks((prev) => [link, ...prev]);
+          setCreated(link);
         }}
       />
 
@@ -139,30 +167,15 @@ export default function PrivateLinksPage() {
         {created && (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-[#4A4A3C]">
-              Hidden tier added to <strong>{created.tiers_created}</strong> event{created.tiers_created === 1 ? "" : "s"}.
-              Send this link to the people it&apos;s for:
+              <strong>{created.tier_name}</strong> ({formatMoney(created.price_pence, created.currency)}) is now available
+              privately for {created.artist_name} — {created.city_name}. Send this link to the people it&apos;s for:
             </p>
             <div className="flex items-center gap-2 rounded-lg border border-[#EDEAE0] bg-[#FAFAF7] px-3 py-2">
-              <code className="flex-1 truncate text-xs text-[#4A4A3C]">{created.link.url}</code>
-              <Button variant="secondary" onClick={() => copyLink(created.link.url, showSuccess, showError)}>
+              <code className="flex-1 truncate text-xs text-[#4A4A3C]">{created.url}</code>
+              <Button variant="secondary" onClick={() => copyLink(created.url, showSuccess, showError)}>
                 <Copy className="h-4 w-4" /> Copy
               </Button>
             </div>
-            {created.skipped_stops.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                <p className="flex items-center gap-1 font-medium">
-                  <AlertTriangle className="h-4 w-4" /> {created.skipped_stops.length} event(s) skipped — no price for
-                  their currency:
-                </p>
-                <ul className="mt-1 list-disc pl-5">
-                  {created.skipped_stops.map((s) => (
-                    <li key={s.tour_stop_id}>
-                      {s.artist_name} — {s.city_name} ({s.currency.toUpperCase()})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
             <div className="flex justify-end">
               <Button onClick={() => setCreated(null)}>Done</Button>
             </div>

@@ -55,7 +55,8 @@ export function TierManagerModal({ showId, stopId, stopLabel, currency, onClose 
     }
     (async () => {
       try {
-        setTiers(await listTiers(showId, stopId));
+        // Private-link tiers are managed under Private Links, not here.
+        setTiers((await listTiers(showId, stopId)).filter((t) => !t.access_link_id));
       } catch (err) {
         showError(err instanceof ApiError ? err.message : "Failed to load pricing tiers.");
         setTiers([]);

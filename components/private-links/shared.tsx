@@ -9,8 +9,8 @@ export function PrivateLinkStatusBadge({ link }: { link: PrivateLink }) {
       return <Badge color="red">Revoked</Badge>;
     case "expired":
       return <Badge color="gray">Expired</Badge>;
-    case "used_up":
-      return <Badge color="gray">Used up</Badge>;
+    case "sold_out":
+      return <Badge color="gray">Sold out</Badge>;
     default:
       return <Badge color="green">Active</Badge>;
   }

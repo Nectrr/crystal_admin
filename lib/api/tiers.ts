@@ -9,6 +9,8 @@ export interface Tier {
   tickets_sold: number;
   sort_order: number;
   is_active: boolean;
+  // Set on a private-link tier (hidden from the public site).
+  access_link_id?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -3,26 +3,23 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Copy, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Table, THead, TBody, TH, TR, TD, EmptyState } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/Table";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { PrivateLinkStatusBadge, copyLink } from "@/components/private-links/shared";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { formatMoney } from "@/lib/currency";
+import { currencySymbol, formatMoney } from "@/lib/currency";
 import {
   getPrivateLink,
-  listPrivateLinkEvents,
   regeneratePrivateLink,
   revokePrivateLink,
-  syncPrivateLink,
   updatePrivateLink,
   type PrivateLink,
-  type PrivateLinkEvent,
 } from "@/lib/api/privateLinks";
 
 // datetime-local wants "yyyy-MM-ddTHH:mm" in local time.
@@ -34,29 +31,29 @@ export default function PrivateLinkDetailPage() {
   const params = useParams<{ id: string }>();
   const { showSuccess, showError } = useToast();
   const [link, setLink] = useState<PrivateLink | null>(null);
-  const [events, setEvents] = useState<PrivateLinkEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [label, setLabel] = useState("");
-  const [maxTickets, setMaxTickets] = useState("");
+  const [tierName, setTierName] = useState("");
+  const [price, setPrice] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [confirm, setConfirm] = useState<"regenerate" | "revoke" | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   function applyLink(l: PrivateLink) {
     setLink(l);
     setLabel(l.label);
-    setMaxTickets(l.max_tickets ? String(l.max_tickets) : "");
+    setTierName(l.tier_name);
+    setPrice((l.price_pence / 100).toFixed(2));
+    setQuantity(String(l.quantity));
     setExpiresAt(toLocalInput(l.expires_at));
   }
 
   const load = useCallback(async () => {
     try {
-      const [l, evs] = await Promise.all([getPrivateLink(params.id), listPrivateLinkEvents(params.id)]);
-      applyLink(l);
-      setEvents(evs);
+      applyLink(await getPrivateLink(params.id));
     } catch (err) {
       showError(err instanceof ApiError ? err.message : "Failed to load private link.");
     } finally {
@@ -70,18 +67,29 @@ export default function PrivateLinkDetailPage() {
   }, [load]);
 
   async function handleSave() {
-    if (!link || !label.trim()) {
-      showError("Enter a label.");
+    if (!link) return;
+    if (!label.trim() || !tierName.trim()) {
+      showError("Enter a label and a tier name.");
       return;
     }
-    const max = maxTickets ? parseInt(maxTickets, 10) : undefined;
+    const pricePence = Math.round(parseFloat(price) * 100);
+    const qty = parseInt(quantity, 10);
+    if (!pricePence || pricePence < 1) {
+      showError("Enter a price.");
+      return;
+    }
+    if (!qty || qty < link.tickets_sold) {
+      showError(`Tickets available can't be lower than the ${link.tickets_sold} already sold.`);
+      return;
+    }
     setSaving(true);
     try {
       applyLink(
         await updatePrivateLink(link.id, {
           label: label.trim(),
-          max_tickets: max && max > 0 ? max : undefined,
-          clear_max_tickets: !maxTickets,
+          tier_name: tierName.trim(),
+          price_pence: pricePence,
+          quantity: qty,
           expires_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
           clear_expires_at: !expiresAt,
         })
@@ -91,25 +99,6 @@ export default function PrivateLinkDetailPage() {
       showError(err instanceof ApiError ? err.message : "Failed to update private link.");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleSync() {
-    if (!link) return;
-    setSyncing(true);
-    try {
-      const res = await syncPrivateLink(link.id);
-      applyLink(res.link);
-      setEvents(await listPrivateLinkEvents(link.id));
-      const skipped = res.skipped_stops.length;
-      showSuccess(
-        `Added to ${res.tiers_created} new event${res.tiers_created === 1 ? "" : "s"}` +
-          (skipped ? ` — ${skipped} skipped (no price for their currency).` : ".")
-      );
-    } catch (err) {
-      showError(err instanceof ApiError ? err.message : "Failed to apply to new events.");
-    } finally {
-      setSyncing(false);
     }
   }
 
@@ -144,7 +133,7 @@ export default function PrivateLinkDetailPage() {
   }
 
   const revoked = !!link.revoked_at;
-  const pct = link.max_tickets ? Math.min(100, Math.round((link.tickets_used / link.max_tickets) * 100)) : null;
+  const pct = link.quantity ? Math.min(100, Math.round((link.tickets_sold / link.quantity) * 100)) : 0;
 
   return (
     <div>
@@ -153,9 +142,9 @@ export default function PrivateLinkDetailPage() {
       </Link>
       <PageHeader
         title={link.label}
-        description={`${link.tier_name} · ${link.quantity_per_stop} per event · ${Object.entries(link.prices)
-          .map(([c, p]) => formatMoney(p, c))
-          .join(" / ")}`}
+        description={`${link.artist_name} — ${link.city_name}${
+          link.event_start_at ? ` · ${format(new Date(link.event_start_at), "d MMM yyyy")}` : ""
+        }`}
         actions={<PrivateLinkStatusBadge link={link} />}
       />
 
@@ -175,15 +164,14 @@ export default function PrivateLinkDetailPage() {
 
           <div className="mt-4">
             <p className="text-sm text-[#4A4A3C]">
-              Sold <strong>{link.tickets_used}</strong>
-              {link.max_tickets ? ` of ${link.max_tickets}` : " (no limit)"}
+              Sold <strong>{link.tickets_sold}</strong> of {link.quantity} at{" "}
+              {formatMoney(link.price_pence, link.currency)}
             </p>
-            {pct !== null && (
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[#EDEAE0]">
-                <div className="h-full bg-[#B8952F]" style={{ width: `${pct}%` }} />
-              </div>
-            )}
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[#EDEAE0]">
+              <div className="h-full bg-[#B8952F]" style={{ width: `${pct}%` }} />
+            </div>
             <p className="mt-2 text-xs text-[#8C8C78]">
+              {link.source_tier_name ? `Based on ${link.source_tier_name} · ` : ""}
               {link.expires_at ? `Expires ${format(new Date(link.expires_at), "d MMM yyyy, HH:mm")}` : "Never expires"}
             </p>
           </div>
@@ -193,15 +181,29 @@ export default function PrivateLinkDetailPage() {
           <p className="mb-2 text-sm font-medium text-[#4A4A3C]">Settings</p>
           <div className="flex flex-col gap-3">
             <Input id="pl-label" label="Label" value={label} onChange={(e) => setLabel(e.target.value)} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              id="pl-tier"
+              label="Tier name (buyers see this)"
+              value={tierName}
+              onChange={(e) => setTierName(e.target.value)}
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Input
-                id="pl-max"
-                label="Max tickets (all events)"
-                hint="Empty = no limit."
+                id="pl-price"
+                label={`Price (${currencySymbol(link.currency)})`}
                 type="number"
-                min={1}
-                value={maxTickets}
-                onChange={(e) => setMaxTickets(e.target.value)}
+                min={0}
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+              <Input
+                id="pl-qty"
+                label="Tickets available"
+                type="number"
+                min={Math.max(1, link.tickets_sold)}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
               />
               <Input
                 id="pl-expires"
@@ -212,6 +214,7 @@ export default function PrivateLinkDetailPage() {
                 onChange={(e) => setExpiresAt(e.target.value)}
               />
             </div>
+            <p className="text-xs text-[#8C8C78]">Price changes only affect new purchases.</p>
             <div className="flex justify-end">
               <Button loading={saving} onClick={handleSave}>
                 Save changes
@@ -220,42 +223,6 @@ export default function PrivateLinkDetailPage() {
           </div>
         </section>
       </div>
-
-      <section className="mb-6">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-[#4A4A3C]">Events ({events.length})</h2>
-          <Button variant="secondary" loading={syncing} onClick={handleSync}>
-            <RefreshCw className="h-4 w-4" /> Apply to new events
-          </Button>
-        </div>
-        {events.length === 0 ? (
-          <EmptyState message="No upcoming published events have this private tier." />
-        ) : (
-          <Table>
-            <THead>
-              <TR>
-                <TH>Event</TH>
-                <TH>Date</TH>
-                <TH>Price</TH>
-                <TH>Left</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {events.map((e) => (
-                <TR key={e.tier_id}>
-                  <TD>
-                    <span className="font-medium">{e.artist_name}</span> — {e.city_name}
-                    <p className="text-xs text-[#8C8C78]">{e.tour_name}</p>
-                  </TD>
-                  <TD>{e.event_start_at ? format(new Date(e.event_start_at), "d MMM yyyy") : "TBC"}</TD>
-                  <TD>{formatMoney(e.price_pence, e.currency)}</TD>
-                  <TD>{e.remaining} / {link.quantity_per_stop}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        )}
-      </section>
 
       <section className="rounded-lg border border-red-200 bg-white p-4">
         <p className="mb-3 text-sm font-medium text-red-700">Danger zone</p>
