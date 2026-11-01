@@ -29,7 +29,6 @@ export default function AffiliatesPage() {
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalOwed = affiliates.reduce((sum, a) => sum + a.summary.balance_pence, 0);
