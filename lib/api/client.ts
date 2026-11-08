@@ -32,6 +32,8 @@ export interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   isFormData?: boolean;
   /** When true, a successful response body is returned as raw text (e.g. a CSV download) instead of parsed JSON. */
   rawText?: boolean;
+  /** When true, a successful response body is returned as a Blob (e.g. a PDF download). */
+  rawBlob?: boolean;
   /** Internal: set on the retried request after a refresh, to prevent infinite refresh loops. */
   _isRetry?: boolean;
 }
@@ -45,7 +47,7 @@ const NO_AUTH_HEADER_PATHS = ["/api/auth/login", "/api/auth/refresh"];
  * On a 401 from an authenticated request, attempts one refresh-and-retry before giving up.
  */
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const { body, isFormData, rawText, headers, _isRetry, ...rest } = options;
+  const { body, isFormData, rawText, rawBlob, headers, _isRetry, ...rest } = options;
 
   const skipAuthHeader = NO_AUTH_HEADER_PATHS.includes(path);
   const accessToken = skipAuthHeader ? null : getAccessToken();
@@ -72,6 +74,10 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
 
   if (res.status === 204) {
     return undefined as T;
+  }
+
+  if (res.ok && rawBlob) {
+    return (await res.blob()) as T;
   }
 
   const text = await res.text();

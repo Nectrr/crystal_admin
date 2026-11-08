@@ -59,7 +59,11 @@ export async function exportOrdersCsv(params: ExportOrdersParams) {
   });
   const stamp = new Date().toISOString().slice(0, 10);
   const name = `orders${params.status ? `-${params.status}` : ""}-${stamp}.csv`;
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), name);
+}
+
+function saveBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -67,6 +71,32 @@ export async function exportOrdersCsv(params: ExportOrdersParams) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+export interface OrderTicket {
+  id: string;
+  order_id: string;
+  ticket_code: string;
+  status: TicketStatus;
+  email_sent_at?: string | null;
+  created_at: string;
+}
+
+export async function listOrderTickets(orderId: string): Promise<OrderTicket[]> {
+  const data = await apiFetch<OrderTicket[] | null>(`/api/admin/orders/${orderId}/tickets`, { method: "GET" });
+  return data ?? [];
+}
+
+/** Downloads one ticket as a printable PDF (QR code + attendee details). */
+export async function downloadTicketPdf(ticket: { id: string; ticket_code: string }) {
+  const pdf = await apiFetch<Blob>(`/api/admin/tickets/${ticket.id}/pdf`, { method: "GET", rawBlob: true });
+  saveBlob(pdf, `ticket-${ticket.ticket_code}.pdf`);
+}
+
+/** Downloads every ticket on an order as one PDF, one page per ticket ("Ticket 1 of 2", ...). */
+export async function downloadOrderTicketsPdf(orderId: string) {
+  const pdf = await apiFetch<Blob>(`/api/admin/orders/${orderId}/tickets/pdf`, { method: "GET", rawBlob: true });
+  saveBlob(pdf, `tickets-${orderId.slice(0, 8)}.pdf`);
 }
 
 // The backend returns 204 No Content on success — no updated order body.

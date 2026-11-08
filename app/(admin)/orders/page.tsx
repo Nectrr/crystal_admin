@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, RotateCcw, Search } from "lucide-react";
+import { Download, FileDown, RotateCcw, Search, Ticket as TicketIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Table, THead, TBody, TH, TD, TR, EmptyState, Badge, TableSkeleton } from "@/components/ui/Table";
 import { Select, Input } from "@/components/ui/Field";
@@ -9,7 +9,17 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { exportOrdersCsv, listOrders, refundOrder, type Order, type OrderStatus } from "@/lib/api/orders";
+import {
+  downloadOrderTicketsPdf,
+  downloadTicketPdf,
+  exportOrdersCsv,
+  listOrderTickets,
+  listOrders,
+  refundOrder,
+  type Order,
+  type OrderStatus,
+  type OrderTicket,
+} from "@/lib/api/orders";
 import { formatMoney } from "@/lib/currency";
 
 const STATUS_COLOR: Record<OrderStatus, "gold" | "green" | "red" | "gray"> = {
@@ -62,6 +72,35 @@ export default function OrdersPage() {
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [ticketsOrder, setTicketsOrder] = useState<Order | null>(null);
+  const [orderTickets, setOrderTickets] = useState<OrderTicket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  // Which download is in flight: a ticket id, or "all" for the whole order.
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  async function openTickets(o: Order) {
+    setTicketsOrder(o);
+    setOrderTickets([]);
+    setTicketsLoading(true);
+    try {
+      setOrderTickets(await listOrderTickets(o.id));
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to load tickets.");
+    } finally {
+      setTicketsLoading(false);
+    }
+  }
+
+  async function handleDownload(key: string, fn: () => Promise<void>) {
+    setDownloading(key);
+    try {
+      await fn();
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to download ticket.");
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   // Exports everything matching the current status/date filters — all
   // pages, not just the one on screen. The name/email search box is
@@ -267,11 +306,18 @@ export default function OrdersPage() {
                     </TD>
                     <TD className="text-[#8C8C78]">{new Date(o.created_at).toLocaleString()}</TD>
                     <TD>
-                      {o.status === "paid" && (
-                        <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1">
-                          <RotateCcw className="h-3.5 w-3.5" /> Refund
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {(o.status === "paid" || o.status === "refunded") && (
+                          <button onClick={() => openTickets(o)} className="text-[#B8952F] flex items-center gap-1">
+                            <TicketIcon className="h-3.5 w-3.5" /> Tickets
+                          </button>
+                        )}
+                        {o.status === "paid" && (
+                          <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1">
+                            <RotateCcw className="h-3.5 w-3.5" /> Refund
+                          </button>
+                        )}
+                      </div>
                     </TD>
                   </TR>
                 ))}
@@ -299,11 +345,18 @@ export default function OrdersPage() {
                 </div>
                 <div className="flex items-center justify-between text-xs text-[#8C8C78]">
                   <span>{new Date(o.created_at).toLocaleString()}</span>
-                  {o.status === "paid" && (
-                    <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
-                      <RotateCcw className="h-3.5 w-3.5" /> Refund
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {(o.status === "paid" || o.status === "refunded") && (
+                      <button onClick={() => openTickets(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
+                        <TicketIcon className="h-3.5 w-3.5" /> Tickets
+                      </button>
+                    )}
+                    {o.status === "paid" && (
+                      <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
+                        <RotateCcw className="h-3.5 w-3.5" /> Refund
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -328,6 +381,66 @@ export default function OrdersPage() {
           </div>
         </>
       )}
+
+      <Modal open={!!ticketsOrder} onClose={() => setTicketsOrder(null)} title="Tickets" maxWidth="max-w-md">
+        {ticketsOrder && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-[#4A4A3C]">
+              {ticketsOrder.full_name} · {ticketsOrder.email}
+            </p>
+            {ticketsLoading ? (
+              <p className="text-sm text-[#8C8C78]">Loading tickets…</p>
+            ) : orderTickets.length === 0 ? (
+              <p className="text-sm text-[#8C8C78]">No tickets have been issued for this order.</p>
+            ) : (
+              <>
+                <ul className="flex flex-col divide-y divide-[#EDEAE0] rounded-lg border border-[#EDEAE0]">
+                  {orderTickets.map((t, i) => (
+                    <li key={t.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-[#4A4A3C]">
+                          Ticket {i + 1} of {orderTickets.length}
+                        </p>
+                        <p className="font-mono text-xs text-[#8C8C78]">{t.ticket_code}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge color={t.status === "valid" ? "green" : t.status === "void" ? "red" : "gray"}>
+                          {t.status}
+                        </Badge>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          loading={downloading === t.id}
+                          disabled={downloading !== null && downloading !== t.id}
+                          onClick={() => handleDownload(t.id, () => downloadTicketPdf(t))}
+                          title="Download this ticket as a PDF"
+                        >
+                          {downloading !== t.id && <FileDown className="h-4 w-4" />}
+                          PDF
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {orderTickets.length > 1 && (
+                  <Button
+                    type="button"
+                    loading={downloading === "all"}
+                    disabled={downloading !== null && downloading !== "all"}
+                    onClick={() => handleDownload("all", () => downloadOrderTicketsPdf(ticketsOrder.id))}
+                  >
+                    {downloading !== "all" && <Download className="h-4 w-4" />}
+                    Download all {orderTickets.length} tickets (one PDF)
+                  </Button>
+                )}
+                {orderTickets.some((t) => t.status === "void") && (
+                  <p className="text-xs text-[#8C8C78]">Void tickets download stamped “VOID” and won’t scan in.</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <Modal open={!!refundTarget} onClose={closeRefund} title="Refund order" maxWidth="max-w-md">
         {refundTarget && (
