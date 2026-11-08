@@ -45,6 +45,30 @@ export async function listOrders(params: ListOrdersParams): Promise<ListOrdersRe
   return { ...data, orders: data.orders ?? [] };
 }
 
+export type ExportOrdersParams = Omit<ListOrdersParams, "limit" | "offset"> & { show_id?: string };
+
+/**
+ * Downloads every order matching the filters (no paging) as a CSV file.
+ * Fetched through apiFetch so the bearer token and refresh-on-401 still
+ * apply — a plain <a href> link couldn't carry the Authorization header.
+ */
+export async function exportOrdersCsv(params: ExportOrdersParams) {
+  const csv = await apiFetch<string>(`/api/admin/orders/export${buildQuery({ ...params })}`, {
+    method: "GET",
+    rawText: true,
+  });
+  const stamp = new Date().toISOString().slice(0, 10);
+  const name = `orders${params.status ? `-${params.status}` : ""}-${stamp}.csv`;
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // The backend returns 204 No Content on success — no updated order body.
 // amountPence is optional; omit it to refund the full order total.
 export function refundOrder(id: string, amountPence?: number) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RotateCcw, Search } from "lucide-react";
+import { Download, RotateCcw, Search } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Table, THead, TBody, TH, TD, TR, EmptyState, Badge, TableSkeleton } from "@/components/ui/Table";
 import { Select, Input } from "@/components/ui/Field";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
-import { listOrders, refundOrder, type Order, type OrderStatus } from "@/lib/api/orders";
+import { exportOrdersCsv, listOrders, refundOrder, type Order, type OrderStatus } from "@/lib/api/orders";
 import { formatMoney } from "@/lib/currency";
 
 const STATUS_COLOR: Record<OrderStatus, "gold" | "green" | "red" | "gray"> = {
@@ -61,6 +61,25 @@ export default function OrdersPage() {
   const [refundAmountInput, setRefundAmountInput] = useState("");
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Exports everything matching the current status/date filters — all
+  // pages, not just the one on screen. The name/email search box is
+  // client-side only, so it doesn't narrow the export.
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await exportOrdersCsv({
+        status: status || undefined,
+        from: from ? new Date(from).toISOString() : undefined,
+        to: to ? new Date(to).toISOString() : undefined,
+      });
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to export orders.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -193,6 +212,18 @@ export default function OrdersPage() {
             className="rounded-lg border border-[#EDEAE0] bg-white py-2 pl-9 pr-3 text-sm text-[#4A4A3C] focus:outline-none focus:ring-2 focus:ring-[#B8952F]/40 focus:border-[#B8952F]"
           />
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          className="ml-auto"
+          loading={exporting}
+          disabled={total === 0}
+          onClick={handleExport}
+          title="Download every order matching the status and date filters"
+        >
+          {!exporting && <Download className="h-4 w-4" />}
+          Export CSV
+        </Button>
       </div>
 
       {loading ? (
