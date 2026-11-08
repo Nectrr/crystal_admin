@@ -61,13 +61,6 @@ const emptyDraft: Draft = {
   currency: "",
 };
 
-// A stop with no date set is never "past" — there's nothing to compare
-// against, so it's treated as still manageable. Mirrors the backend's
-// TOUR_STOP_DATE_PASSED guard in UpdateTourStop.
-function isStopPast(stop: TourStop): boolean {
-  return !!stop.event_start_at && new Date(stop.event_start_at) < new Date();
-}
-
 export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStopsTabProps) {
   const { showSuccess, showError } = useToast();
   const [adding, setAdding] = useState(false);
@@ -254,22 +247,22 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
       key: "actions",
       header: "",
       render: (stop) => {
-        const past = isStopPast(stop);
+        // Past events are no longer locked: attendees stay viewable and sales
+        // can still be switched on/off regardless of the event date.
         return (
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleToggleOnSale(stop)}
-            disabled={togglingId === stop.id || (past && !stop.is_on_sale)}
+            disabled={togglingId === stop.id}
             className={`${stop.is_on_sale ? "text-green-600 hover:text-green-700" : "text-[#8C8C78] hover:text-[#4A4A3C]"} disabled:opacity-30 disabled:hover:text-[#8C8C78]`}
-            title={past && !stop.is_on_sale ? "This event has already happened — can't be put on sale" : stop.is_on_sale ? "Turn ticket sales off" : "Turn ticket sales on"}
+            title={stop.is_on_sale ? "Turn ticket sales off" : "Turn ticket sales on"}
           >
             <Power className="h-4 w-4" />
           </button>
           <button
             onClick={() => setAttendeesStop(stop)}
-            disabled={past}
-            className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
-            title={past ? "Event has passed" : "View attendees"}
+            className="text-[#8C8C78] hover:text-[#4A4A3C]"
+            title="View attendees"
           >
             <Users className="h-4 w-4" />
           </button>
@@ -293,9 +286,9 @@ export function TourStopsTab({ showId, stops, onChange, showCurrency }: TourStop
           </button>
           <button
             onClick={() => setNotifyTarget(stop)}
-            disabled={past || !stop.is_on_sale}
+            disabled={!stop.is_on_sale}
             className="text-[#8C8C78] hover:text-[#4A4A3C] disabled:opacity-30 disabled:hover:text-[#8C8C78]"
-            title={past ? "Event has passed" : stop.is_on_sale ? "Resend \"tickets on sale\" email to all registrants" : "Turn sales on before notifying"}
+            title={stop.is_on_sale ? "Resend \"tickets on sale\" email to all registrants" : "Turn sales on before notifying"}
           >
             <Megaphone className="h-4 w-4" />
           </button>
