@@ -25,6 +25,8 @@ export interface Order {
 
 export interface ListOrdersParams {
   status?: OrderStatus;
+  /** Server-side search over email, name and order id — covers every page. */
+  q?: string;
   from?: string;
   to?: string;
   limit?: number;

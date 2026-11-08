@@ -66,6 +66,8 @@ export default function OrdersPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [query, setQuery] = useState("");
+  // Debounced copy of the search box that actually hits the API.
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refundTarget, setRefundTarget] = useState<Order | null>(null);
   const [refundAmountInput, setRefundAmountInput] = useState("");
@@ -102,9 +104,8 @@ export default function OrdersPage() {
     }
   }
 
-  // Exports everything matching the current status/date filters — all
-  // pages, not just the one on screen. The name/email search box is
-  // client-side only, so it doesn't narrow the export.
+  // Exports everything matching the current status/date/search filters —
+  // all pages, not just the one on screen.
   async function handleExport() {
     setExporting(true);
     try {
@@ -112,6 +113,7 @@ export default function OrdersPage() {
         status: status || undefined,
         from: from ? new Date(from).toISOString() : undefined,
         to: to ? new Date(to).toISOString() : undefined,
+        q: search || undefined,
       });
     } catch (err) {
       showError(err instanceof ApiError ? err.message : "Failed to export orders.");
@@ -127,6 +129,7 @@ export default function OrdersPage() {
         status: status || undefined,
         from: from ? new Date(from).toISOString() : undefined,
         to: to ? new Date(to).toISOString() : undefined,
+        q: search || undefined,
         limit: LIMIT,
         offset,
       });
@@ -142,7 +145,18 @@ export default function OrdersPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offset, status, from, to]);
+  }, [offset, status, from, to, search]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const next = query.trim();
+      if (next !== search) {
+        setOffset(0);
+        setSearch(next);
+      }
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [query, search]);
 
   // The transaction fee is never refundable through this modal — the
   // ceiling is the ticket price alone (total minus fee), not the full order
@@ -194,13 +208,9 @@ export default function OrdersPage() {
   const page = Math.floor(offset / LIMIT) + 1;
   const pageCount = Math.max(1, Math.ceil(total / LIMIT));
 
-  // Search only filters within the currently-loaded server page — pagination/total stay
-  // server-driven (offset/limit/total against the API), so we don't duplicate that logic
-  // with client-side DataTable pagination which would misrepresent the real total.
-  const q = query.trim().toLowerCase();
-  const filteredOrders = q
-    ? orders.filter((o) => o.full_name.toLowerCase().includes(q) || o.email.toLowerCase().includes(q))
-    : orders;
+  // Search runs on the server (the `q` param) across every order, so results
+  // and the total/pagination already reflect it.
+  const filteredOrders = orders;
 
   return (
     <div>
@@ -247,7 +257,7 @@ export default function OrdersPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name or email..."
+            placeholder="Name, email or order ID..."
             className="rounded-lg border border-[#EDEAE0] bg-white py-2 pl-9 pr-3 text-sm text-[#4A4A3C] focus:outline-none focus:ring-2 focus:ring-[#B8952F]/40 focus:border-[#B8952F]"
           />
         </div>
@@ -258,7 +268,7 @@ export default function OrdersPage() {
           loading={exporting}
           disabled={total === 0}
           onClick={handleExport}
-          title="Download every order matching the status and date filters"
+          title="Download every order matching the current filters and search"
         >
           {!exporting && <Download className="h-4 w-4" />}
           Export CSV
@@ -267,10 +277,10 @@ export default function OrdersPage() {
 
       {loading ? (
         <TableSkeleton rows={6} cols={6} />
-      ) : orders.length === 0 ? (
+      ) : orders.length === 0 && !search ? (
         <EmptyState title="No orders found" message="Orders will appear here once tickets start selling." />
       ) : filteredOrders.length === 0 ? (
-        <EmptyState title="No matches" message="No orders on this page match your search." />
+        <EmptyState title="No matches" message="No orders match your search." />
       ) : (
         <>
           {/* Desktop table */}
