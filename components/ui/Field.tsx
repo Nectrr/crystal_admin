@@ -1,6 +1,7 @@
 "use client";
 
-import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, ReactNode } from "react";
+import { useState, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface WrapperProps {
   label?: string;
@@ -34,10 +35,36 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
 }
 
-export function Input({ label, error, hint, id, className = "", ...rest }: InputProps) {
+export function Input({ label, error, hint, id, className = "", type, ...rest }: InputProps) {
+  // Password fields get a show/hide (eye) toggle automatically.
+  const [revealed, setRevealed] = useState(false);
+  if (type === "password") {
+    return (
+      <FieldWrapper label={label} error={error} hint={hint} htmlFor={id}>
+        <div className="relative">
+          <input
+            id={id}
+            type={revealed ? "text" : "password"}
+            className={`${baseInputClass} pr-10 ${className}`}
+            {...rest}
+          />
+          <button
+            type="button"
+            onClick={() => setRevealed((r) => !r)}
+            aria-label={revealed ? "Hide password" : "Show password"}
+            aria-pressed={revealed}
+            title={revealed ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-[#8C8C78] hover:text-[#4A4A3C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B8952F]/40"
+          >
+            {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </FieldWrapper>
+    );
+  }
   return (
     <FieldWrapper label={label} error={error} hint={hint} htmlFor={id}>
-      <input id={id} className={`${baseInputClass} ${className}`} {...rest} />
+      <input id={id} type={type} className={`${baseInputClass} ${className}`} {...rest} />
     </FieldWrapper>
   );
 }
