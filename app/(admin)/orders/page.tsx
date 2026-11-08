@@ -423,10 +423,10 @@ export default function OrdersPage() {
                           loading={downloading === t.id}
                           disabled={downloading !== null && downloading !== t.id}
                           onClick={() => handleDownload(t.id, () => downloadTicket(t))}
-                          title="Download this ticket (same design as the ticket email)"
+                          title="Download this ticket as a PDF"
                         >
                           {downloading !== t.id && <FileDown className="h-4 w-4" />}
-                          Download
+                          PDF
                         </Button>
                       </div>
                     </li>
@@ -440,11 +440,11 @@ export default function OrdersPage() {
                     onClick={() => handleDownload("all", () => downloadOrderTickets(ticketsOrder.id))}
                   >
                     {downloading !== "all" && <Download className="h-4 w-4" />}
-                    Download all {orderTickets.length} tickets
+                    Download all {orderTickets.length} tickets (PDF)
                   </Button>
                 )}
                 <p className="text-xs text-[#8C8C78]">
-                  Tickets download in the same design as the ticket email. Open the file and print or “Save as PDF”.
+                  Tickets download as PDF, in the same design as the ticket email.
                 </p>
                 {orderTickets.some((t) => t.status === "void") && (
                   <p className="text-xs text-[#8C8C78]">Void tickets download with a “VOID — not valid for entry” banner.</p>

@@ -1,4 +1,5 @@
 import { apiFetch, buildQuery } from "./client";
+import { htmlToPdf } from "@/lib/htmlToPdf";
 
 export type OrderStatus = "pending" | "paid" | "failed" | "sold_out" | "refunded";
 
@@ -90,18 +91,22 @@ export async function listOrderTickets(orderId: string): Promise<OrderTicket[]> 
 }
 
 /**
- * Downloads one ticket rendered with the same template as the ticket email.
- * It's an .html file — open it in a browser and print / "Save as PDF".
+ * Downloads one ticket as a PDF, in the same design as the ticket email. The
+ * API returns the rendered email template; it is converted to PDF in the
+ * browser (see lib/htmlToPdf).
  */
 export async function downloadTicket(ticket: { id: string; ticket_code: string }) {
-  const file = await apiFetch<Blob>(`/api/admin/tickets/${ticket.id}/download`, { method: "GET", rawBlob: true });
-  saveBlob(file, `ticket-${ticket.ticket_code}.html`);
+  const html = await apiFetch<string>(`/api/admin/tickets/${ticket.id}/download`, { method: "GET", rawText: true });
+  saveBlob(await htmlToPdf(html), `ticket-${ticket.ticket_code}.pdf`);
 }
 
-/** Downloads every ticket on an order as one file, one ticket per printed page. */
+/** Downloads every ticket on an order as one PDF, one ticket per page. */
 export async function downloadOrderTickets(orderId: string) {
-  const file = await apiFetch<Blob>(`/api/admin/orders/${orderId}/tickets/download`, { method: "GET", rawBlob: true });
-  saveBlob(file, `tickets-${orderId.slice(0, 8)}.html`);
+  const html = await apiFetch<string>(`/api/admin/orders/${orderId}/tickets/download`, {
+    method: "GET",
+    rawText: true,
+  });
+  saveBlob(await htmlToPdf(html), `tickets-${orderId.slice(0, 8)}.pdf`);
 }
 
 // The backend returns 204 No Content on success — no updated order body.
