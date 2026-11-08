@@ -65,6 +65,8 @@ export function resendPaymentLink(id: string) {
 
 export interface ListOrdersParams {
   status?: OrderStatus;
+  show_id?: string;
+  tour_stop_id?: string;
   /** Server-side search over email, name and order id — covers every page. */
   q?: string;
   from?: string;
@@ -87,20 +89,22 @@ export async function listOrders(params: ListOrdersParams): Promise<ListOrdersRe
   return { ...data, orders: data.orders ?? [] };
 }
 
-export type ExportOrdersParams = Omit<ListOrdersParams, "limit" | "offset"> & { show_id?: string };
+export type ExportOrdersParams = Omit<ListOrdersParams, "limit" | "offset">;
 
 /**
  * Downloads every order matching the filters (no paging) as a CSV file.
  * Fetched through apiFetch so the bearer token and refresh-on-401 still
  * apply — a plain <a href> link couldn't carry the Authorization header.
  */
-export async function exportOrdersCsv(params: ExportOrdersParams) {
+/** `label` (e.g. "brymo-manchester") is added to the downloaded file name. */
+export async function exportOrdersCsv(params: ExportOrdersParams, label?: string) {
   const csv = await apiFetch<string>(`/api/admin/orders/export${buildQuery({ ...params })}`, {
     method: "GET",
     rawText: true,
   });
   const stamp = new Date().toISOString().slice(0, 10);
-  const name = `orders${params.status ? `-${params.status}` : ""}-${stamp}.csv`;
+  const slug = label ? `-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}` : "";
+  const name = `orders${slug}${params.status ? `-${params.status}` : ""}-${stamp}.csv`;
   saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), name);
 }
 

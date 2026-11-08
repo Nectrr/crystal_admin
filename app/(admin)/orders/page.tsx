@@ -23,6 +23,7 @@ import {
   type OrderTicket,
 } from "@/lib/api/orders";
 import { formatMoney } from "@/lib/currency";
+import { getShow, listShows, type Show, type TourStop } from "@/lib/api/shows";
 import { CreateOrderModal } from "@/components/orders/CreateOrderModal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -69,6 +70,25 @@ export default function OrdersPage() {
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [shows, setShows] = useState<Show[]>([]);
+  const [showId, setShowId] = useState("");
+  const [stops, setStops] = useState<TourStop[]>([]);
+  const [stopId, setStopId] = useState("");
+
+  useEffect(() => {
+    listShows()
+      .then(setShows)
+      .catch(() => setShows([]));
+  }, []);
+
+  useEffect(() => {
+    setStops([]);
+    setStopId("");
+    if (!showId) return;
+    getShow(showId)
+      .then((s) => setStops(s.tour_stops ?? []))
+      .catch(() => setStops([]));
+  }, [showId]);
   const [query, setQuery] = useState("");
   // Debounced copy of the search box that actually hits the API.
   const [search, setSearch] = useState("");
@@ -137,17 +157,25 @@ export default function OrdersPage() {
     }
   }
 
-  // Exports everything matching the current status/date/search filters —
-  // all pages, not just the one on screen.
+  // Exports everything matching the current show/stop/status/date/search
+  // filters — all pages, not just the one on screen.
   async function handleExport() {
     setExporting(true);
     try {
-      await exportOrdersCsv({
-        status: status || undefined,
-        from: from ? new Date(from).toISOString() : undefined,
-        to: to ? new Date(to).toISOString() : undefined,
-        q: search || undefined,
-      });
+      const show = shows.find((s) => s.id === showId);
+      const stop = stops.find((s) => s.id === stopId);
+      const label = [show?.artist_name, stop?.city_name].filter(Boolean).join(" ");
+      await exportOrdersCsv(
+        {
+          status: status || undefined,
+          show_id: showId || undefined,
+          tour_stop_id: stopId || undefined,
+          from: from ? new Date(from).toISOString() : undefined,
+          to: to ? new Date(to).toISOString() : undefined,
+          q: search || undefined,
+        },
+        label || undefined
+      );
     } catch (err) {
       showError(err instanceof ApiError ? err.message : "Failed to export orders.");
     } finally {
@@ -160,6 +188,8 @@ export default function OrdersPage() {
     try {
       const res = await listOrders({
         status: status || undefined,
+        show_id: showId || undefined,
+        tour_stop_id: stopId || undefined,
         from: from ? new Date(from).toISOString() : undefined,
         to: to ? new Date(to).toISOString() : undefined,
         q: search || undefined,
@@ -178,7 +208,7 @@ export default function OrdersPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offset, status, from, to, search]);
+  }, [offset, status, showId, stopId, from, to, search]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -258,6 +288,37 @@ export default function OrdersPage() {
       />
 
       <div className="flex flex-wrap items-end gap-3 mb-4">
+        <Select
+          label="Show"
+          value={showId}
+          onChange={(e) => {
+            setOffset(0);
+            setShowId(e.target.value);
+          }}
+        >
+          <option value="">All shows</option>
+          {shows.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.artist_name} — {s.tour_name}
+            </option>
+          ))}
+        </Select>
+        <Select
+          label="Tour stop"
+          value={stopId}
+          disabled={!showId}
+          onChange={(e) => {
+            setOffset(0);
+            setStopId(e.target.value);
+          }}
+        >
+          <option value="">{showId ? "All stops" : "Pick a show first"}</option>
+          {stops.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.city_name}
+            </option>
+          ))}
+        </Select>
         <Select
           label="Status"
           value={status}
