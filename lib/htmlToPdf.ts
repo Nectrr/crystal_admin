@@ -13,7 +13,7 @@ export async function htmlToPdf(html: string): Promise<Blob> {
 
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  iframe.style.cssText = "position:fixed;left:-10000px;top:0;width:680px;height:1200px;border:0;";
+  iframe.style.cssText = `position:fixed;left:-10000px;top:0;width:${FRAME_WIDTH}px;height:1400px;border:0;`;
   document.body.appendChild(iframe);
 
   try {
@@ -22,7 +22,9 @@ export async function htmlToPdf(html: string): Promise<Blob> {
     doc.open();
     doc.write(html);
     doc.close();
-    await waitForAssets(doc);
+    const fontCss = loadTemplateFonts(doc);
+    fixVerticalText(doc);
+    await waitForAssets(doc, fontCss);
 
     // Split the body into one container per ticket at the page-break divs.
     const body = doc.body;
@@ -48,11 +50,16 @@ export async function htmlToPdf(html: string): Promise<Blob> {
 
     let pdf: InstanceType<typeof jsPDF> | null = null;
     for (const page of pages) {
+      // The ticket (726px + padding) is wider than the 600px email column it
+      // sits in and overflows it, so capture the full scroll area rather than
+      // the element's own box — otherwise the QR side gets cut off.
       const canvas = await html2canvas(page, {
         useCORS: true,
         backgroundColor: bg,
         scale: 2,
-        windowWidth: 680,
+        width: page.scrollWidth,
+        height: page.scrollHeight,
+        windowWidth: FRAME_WIDTH,
         logging: false,
       });
       // Page size follows the rendered ticket, at 96dpi-equivalent px.
@@ -73,7 +80,46 @@ export async function htmlToPdf(html: string): Promise<Blob> {
   }
 }
 
-async function waitForAssets(doc: Document) {
+const FRAME_WIDTH = 1000;
+
+/**
+ * The template's Google Fonts `@import` sits after other CSS rules, where
+ * browsers ignore it (an @import must come first) — email clients that
+ * honour it are lenient. Load the same fonts with a <link> so the PDF uses
+ * JetBrains Mono / Playfair Display instead of falling back to Times.
+ */
+function loadTemplateFonts(doc: Document): Promise<void> {
+  const link = doc.createElement("link");
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:wght@700&display=swap";
+  const loaded = new Promise<void>((resolve) => {
+    link.addEventListener("load", () => resolve(), { once: true });
+    link.addEventListener("error", () => resolve(), { once: true });
+  });
+  doc.head.appendChild(link);
+  return loaded;
+}
+
+/**
+ * html2canvas can't draw `writing-mode: vertical-*` (the "TICKET TYPE" spine
+ * comes out as stacked, upside-down letters). Swap each such element for
+ * horizontal text rotated -90deg, which reads the same (bottom to top) and
+ * which html2canvas does support.
+ */
+function fixVerticalText(doc: Document) {
+  const view = doc.defaultView;
+  if (!view) return;
+  for (const el of Array.from(doc.body.querySelectorAll<HTMLElement>("*"))) {
+    if (!view.getComputedStyle(el).writingMode.startsWith("vertical")) continue;
+    el.style.writingMode = "horizontal-tb";
+    el.style.transform = "rotate(-90deg)";
+    el.style.whiteSpace = "nowrap";
+    el.style.display = "inline-block";
+  }
+}
+
+async function waitForAssets(doc: Document, fontCss: Promise<void>) {
   const images = Array.from(doc.images).map((img) =>
     img.complete
       ? Promise.resolve()
@@ -82,7 +128,18 @@ async function waitForAssets(doc: Document) {
           img.addEventListener("error", () => resolve(), { once: true });
         })
   );
-  const fonts = (doc as Document & { fonts?: FontFaceSet }).fonts?.ready ?? Promise.resolve();
+  const fontSet = (doc as Document & { fonts?: FontFaceSet }).fonts;
+  // Wait for the font stylesheet first — until it's parsed there are no
+  // @font-face rules for load() to match — then request each face used.
+  const fonts = fontSet
+    ? fontCss.then(() => Promise.all([
+        fontSet.load('400 16px "JetBrains Mono"'),
+        fontSet.load('700 16px "JetBrains Mono"'),
+        fontSet.load('700 22px "Playfair Display"'),
+      ]))
+        .catch(() => undefined)
+        .then(() => fontSet.ready)
+    : Promise.resolve();
   // Never hang the download on a slow image — cap the wait.
   await Promise.race([Promise.all([...images, fonts]), new Promise((r) => setTimeout(r, 8000))]);
 }
