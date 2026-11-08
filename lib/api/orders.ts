@@ -20,8 +20,47 @@ export interface Order {
   paid_at?: string | null;
   refunded_at?: string | null;
   refunded_pence?: number | null;
+  tier_name?: string | null;
+  payment_provider?: string;
+  /** "checkout" (storefront), "admin_comp" (free) or "admin_invoice" (admin-created, pay by link). */
+  source?: OrderSource;
+  /** Seats are reserved for an unpaid admin_invoice order until payment_expires_at. */
+  capacity_held?: boolean;
+  payment_expires_at?: string | null;
+  admin_note?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type OrderSource = "checkout" | "admin_comp" | "admin_invoice";
+
+export interface ManualOrderInput {
+  show_id: string;
+  tour_stop_id: string;
+  tier_id?: string | null;
+  quantity: number;
+  full_name: string;
+  email: string;
+  /** "comp" = free and valid now; "invoice" = customer is emailed a pay link, valid once paid. */
+  mode: "comp" | "invoice";
+  /** Invoice only: override the total (minor units). Omit for tier price × qty + fee. */
+  total_pence?: number | null;
+  note?: string;
+  /** Comp only: send the confirmation + ticket emails. */
+  send_email?: boolean;
+}
+
+export function createManualOrder(input: ManualOrderInput) {
+  return apiFetch<Order>("/api/admin/orders/manual", { method: "POST", body: input });
+}
+
+/** Cancels an admin-created order: releases held seats, or voids a comp order's tickets. */
+export function cancelManualOrder(id: string) {
+  return apiFetch<void>(`/api/admin/orders/${id}/cancel`, { method: "POST" });
+}
+
+export function resendPaymentLink(id: string) {
+  return apiFetch<void>(`/api/admin/orders/${id}/resend-payment-link`, { method: "POST" });
 }
 
 export interface ListOrdersParams {

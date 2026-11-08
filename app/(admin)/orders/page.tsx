@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, FileDown, RotateCcw, Search, Ticket as TicketIcon } from "lucide-react";
+import { Ban, Download, FileDown, Mail, Plus, RotateCcw, Search, Ticket as TicketIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Table, THead, TBody, TH, TD, TR, EmptyState, Badge, TableSkeleton } from "@/components/ui/Table";
 import { Select, Input } from "@/components/ui/Field";
@@ -10,17 +10,21 @@ import { Modal } from "@/components/ui/Modal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
+  cancelManualOrder,
   downloadOrderTickets,
   downloadTicket,
   exportOrdersCsv,
   listOrderTickets,
   listOrders,
   refundOrder,
+  resendPaymentLink,
   type Order,
   type OrderStatus,
   type OrderTicket,
 } from "@/lib/api/orders";
 import { formatMoney } from "@/lib/currency";
+import { CreateOrderModal } from "@/components/orders/CreateOrderModal";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const STATUS_COLOR: Record<OrderStatus, "gold" | "green" | "red" | "gray"> = {
   pending: "gold",
@@ -74,6 +78,35 @@ export default function OrdersPage() {
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  async function handleCancel() {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      await cancelManualOrder(cancelTarget.id);
+      showSuccess(
+        cancelTarget.source === "admin_comp" ? "Tickets voided and seats released." : "Order cancelled and seats released."
+      );
+      setCancelTarget(null);
+      load();
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to cancel order.");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  async function handleResendLink(o: Order) {
+    try {
+      await resendPaymentLink(o.id);
+      showSuccess(`Payment link re-sent to ${o.email}.`);
+    } catch (err) {
+      showError(err instanceof ApiError ? err.message : "Failed to resend payment link.");
+    }
+  }
   const [ticketsOrder, setTicketsOrder] = useState<Order | null>(null);
   const [orderTickets, setOrderTickets] = useState<OrderTicket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
@@ -214,7 +247,15 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <PageHeader title="Orders" description="Global order & ticket sales view" />
+      <PageHeader
+        title="Orders"
+        description="Global order & ticket sales view"
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" /> Create order
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-end gap-3 mb-4">
         <Select
@@ -308,6 +349,7 @@ export default function OrdersPage() {
                     </TD>
                     <TD>
                       <Badge color={STATUS_COLOR[o.status]}>{o.status}</Badge>
+                      <SourceBadge order={o} />
                       {o.status === "failed" && o.failure_reason && (
                         <p className="text-xs text-red-600 mt-1 max-w-[220px]" title={o.failure_reason}>
                           {o.failure_reason}
@@ -322,9 +364,19 @@ export default function OrdersPage() {
                             <TicketIcon className="h-3.5 w-3.5" /> Tickets
                           </button>
                         )}
-                        {o.status === "paid" && (
+                        {o.status === "paid" && o.source !== "admin_comp" && (
                           <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1">
                             <RotateCcw className="h-3.5 w-3.5" /> Refund
+                          </button>
+                        )}
+                        {isAwaitingPayment(o) && (
+                          <button onClick={() => handleResendLink(o)} className="text-[#B8952F] flex items-center gap-1">
+                            <Mail className="h-3.5 w-3.5" /> Resend link
+                          </button>
+                        )}
+                        {isCancellable(o) && (
+                          <button onClick={() => setCancelTarget(o)} className="text-red-600 flex items-center gap-1">
+                            <Ban className="h-3.5 w-3.5" /> Cancel
                           </button>
                         )}
                       </div>
@@ -344,7 +396,10 @@ export default function OrdersPage() {
                     <p className="text-sm font-medium text-[#4A4A3C]">{o.full_name}</p>
                     <p className="text-xs text-[#8C8C78]">{o.email}</p>
                   </div>
-                  <Badge color={STATUS_COLOR[o.status]}>{o.status}</Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge color={STATUS_COLOR[o.status]}>{o.status}</Badge>
+                    <SourceBadge order={o} />
+                  </div>
                 </div>
                 {o.status === "failed" && o.failure_reason && <p className="text-xs text-red-600">{o.failure_reason}</p>}
                 <div className="flex items-center justify-between text-sm text-[#4A4A3C] border-t border-[#EDEAE0] pt-2">
@@ -361,9 +416,19 @@ export default function OrdersPage() {
                         <TicketIcon className="h-3.5 w-3.5" /> Tickets
                       </button>
                     )}
-                    {o.status === "paid" && (
+                    {o.status === "paid" && o.source !== "admin_comp" && (
                       <button onClick={() => openRefund(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
                         <RotateCcw className="h-3.5 w-3.5" /> Refund
+                      </button>
+                    )}
+                    {isAwaitingPayment(o) && (
+                      <button onClick={() => handleResendLink(o)} className="text-[#B8952F] flex items-center gap-1 text-xs font-medium">
+                        <Mail className="h-3.5 w-3.5" /> Resend link
+                      </button>
+                    )}
+                    {isCancellable(o) && (
+                      <button onClick={() => setCancelTarget(o)} className="text-red-600 flex items-center gap-1 text-xs font-medium">
+                        <Ban className="h-3.5 w-3.5" /> Cancel
                       </button>
                     )}
                   </div>
@@ -391,6 +456,35 @@ export default function OrdersPage() {
           </div>
         </>
       )}
+
+      <CreateOrderModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(o) => {
+          setCreateOpen(false);
+          showSuccess(
+            o.source === "admin_comp"
+              ? `Created ${o.quantity} complimentary ticket${o.quantity === 1 ? "" : "s"} for ${o.full_name}.`
+              : `Order created. Payment link emailed to ${o.email}.`
+          );
+          setOffset(0);
+          load();
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        title="Cancel order"
+        message={
+          cancelTarget?.source === "admin_comp"
+            ? `Void ${cancelTarget?.quantity} complimentary ticket(s) for ${cancelTarget?.full_name} and release the seats? The tickets will stop scanning.`
+            : `Cancel the unpaid order for ${cancelTarget?.full_name} and release ${cancelTarget?.quantity} held seat(s)? Their payment link will stop working.`
+        }
+        confirmLabel="Cancel order"
+        loading={cancelling}
+        onConfirm={handleCancel}
+        onCancel={() => setCancelTarget(null)}
+      />
 
       <Modal open={!!ticketsOrder} onClose={() => setTicketsOrder(null)} title="Tickets" maxWidth="max-w-md">
         {ticketsOrder && (
@@ -492,4 +586,35 @@ export default function OrdersPage() {
       </Modal>
     </div>
   );
+}
+
+function isAwaitingPayment(o: Order) {
+  return o.source === "admin_invoice" && !!o.capacity_held && (o.status === "pending" || o.status === "failed");
+}
+
+function isCancellable(o: Order) {
+  return isAwaitingPayment(o) || (o.source === "admin_comp" && o.status === "paid");
+}
+
+function SourceBadge({ order: o }: { order: Order }) {
+  if (o.source === "admin_comp") {
+    return (
+      <span className="ml-1 inline-block" title={o.admin_note ?? undefined}>
+        <Badge color="gold">complimentary</Badge>
+      </span>
+    );
+  }
+  if (o.source === "admin_invoice") {
+    return (
+      <span className="ml-1 inline-block" title={o.admin_note ?? undefined}>
+        <Badge color="gray">admin</Badge>
+        {isAwaitingPayment(o) && o.payment_expires_at && (
+          <span className="block text-[11px] text-[#8C8C78] mt-1">
+            awaiting payment · held until {new Date(o.payment_expires_at).toLocaleString()}
+          </span>
+        )}
+      </span>
+    );
+  }
+  return null;
 }
