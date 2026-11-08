@@ -19,6 +19,8 @@ import {
 } from "@/lib/api/broadcasts";
 import { useToast } from "@/app/providers/ToastProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { FriendOfferPanel } from "@/components/shows/FriendOfferPanel";
+import { getTicketSettings } from "@/lib/api/shows";
 
 function isBlank(html: string) {
   return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim() === "";
@@ -44,6 +46,13 @@ export function BroadcastTab({ showId }: { showId: string }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState<Broadcast[] | null>(null);
+  const [currency, setCurrency] = useState("gbp");
+
+  useEffect(() => {
+    getTicketSettings(showId)
+      .then((t) => setCurrency(t.currency))
+      .catch(() => undefined);
+  }, [showId]);
 
   useEffect(() => {
     getShow(showId)
@@ -190,6 +199,8 @@ export function BroadcastTab({ showId }: { showId: string }) {
           </Button>
         </div>
       </section>
+
+      <FriendOfferPanel showId={showId} stops={stops} currency={currency} onSent={loadHistory} />
 
       <section>
         <h3 className="mb-3 text-base font-semibold text-[#4A4A3C]">Sent emails</h3>

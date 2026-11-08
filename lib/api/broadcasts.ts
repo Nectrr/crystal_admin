@@ -49,3 +49,25 @@ export function retryBroadcast(showId: string, broadcastId: string) {
     method: "POST",
   });
 }
+
+export interface FriendOfferInput {
+  tour_stop_id: string;
+  /** Public ticket type whose price is discounted. */
+  source_tier_id: string;
+  discount_type: "percent" | "amount";
+  /** Percent (1-99) or amount off in minor units (pence). */
+  discount_value: number;
+  /** Max discounted tickets sold through the link. */
+  quantity: number;
+  expires_at?: string | null;
+  subject: string;
+  body_html: string;
+}
+
+/** Creates a discounted private link and emails it to the stop's ticket holders. */
+export function createFriendOffer(showId: string, input: FriendOfferInput) {
+  return apiFetch<{ link: { id: string; url: string; price_pence: number }; broadcast: Broadcast }>(
+    `/api/admin/shows/${showId}/friend-offers`,
+    { method: "POST", body: input }
+  );
+}
