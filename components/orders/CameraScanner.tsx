@@ -76,6 +76,10 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
       
       lastScannedRef.current = { code: finalCode, time: now };
       busyRef.current = true;
+      // The loop stops here until "Scan another ticket" — clear the id so
+      // scanAnother knows it must start a fresh loop (a stale non-null id
+      // here is what left the scanner stuck on "Scanning").
+      rafRef.current = null;
       setState({ phase: "scanning" });
       handleDetected(finalCode);
       return;
@@ -130,10 +134,17 @@ export function CameraScanner({ onClose }: { onClose: () => void }) {
 
   function scanAnother() {
     if (autoResumeTimerRef.current) window.clearTimeout(autoResumeTimerRef.current);
-    setState({ phase: "scanning" });
-    if (!rafRef.current) {
-      rafRef.current = requestAnimationFrame(tick);
+    // No stream (e.g. it was stopped) — do a full camera restart instead.
+    if (!streamRef.current) {
+      start();
+      return;
     }
+    busyRef.current = false;
+    setState({ phase: "ready" });
+    // Mobile browsers can pause a video while it's hidden behind the result card.
+    videoRef.current?.play().catch(() => {});
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
   }
 
   const showLiveFeed = state.phase === "starting" || state.phase === "ready" || state.phase === "scanning";
