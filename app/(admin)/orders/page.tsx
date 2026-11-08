@@ -10,8 +10,8 @@ import { Modal } from "@/components/ui/Modal";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import {
-  downloadOrderTicketsPdf,
-  downloadTicketPdf,
+  downloadOrderTickets,
+  downloadTicket,
   exportOrdersCsv,
   listOrderTickets,
   listOrders,
@@ -412,11 +412,11 @@ export default function OrdersPage() {
                           variant="secondary"
                           loading={downloading === t.id}
                           disabled={downloading !== null && downloading !== t.id}
-                          onClick={() => handleDownload(t.id, () => downloadTicketPdf(t))}
-                          title="Download this ticket as a PDF"
+                          onClick={() => handleDownload(t.id, () => downloadTicket(t))}
+                          title="Download this ticket (same design as the ticket email)"
                         >
                           {downloading !== t.id && <FileDown className="h-4 w-4" />}
-                          PDF
+                          Download
                         </Button>
                       </div>
                     </li>
@@ -427,14 +427,17 @@ export default function OrdersPage() {
                     type="button"
                     loading={downloading === "all"}
                     disabled={downloading !== null && downloading !== "all"}
-                    onClick={() => handleDownload("all", () => downloadOrderTicketsPdf(ticketsOrder.id))}
+                    onClick={() => handleDownload("all", () => downloadOrderTickets(ticketsOrder.id))}
                   >
                     {downloading !== "all" && <Download className="h-4 w-4" />}
-                    Download all {orderTickets.length} tickets (one PDF)
+                    Download all {orderTickets.length} tickets
                   </Button>
                 )}
+                <p className="text-xs text-[#8C8C78]">
+                  Tickets download in the same design as the ticket email. Open the file and print or “Save as PDF”.
+                </p>
                 {orderTickets.some((t) => t.status === "void") && (
-                  <p className="text-xs text-[#8C8C78]">Void tickets download stamped “VOID” and won’t scan in.</p>
+                  <p className="text-xs text-[#8C8C78]">Void tickets download with a “VOID — not valid for entry” banner.</p>
                 )}
               </>
             )}

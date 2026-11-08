@@ -87,16 +87,19 @@ export async function listOrderTickets(orderId: string): Promise<OrderTicket[]> 
   return data ?? [];
 }
 
-/** Downloads one ticket as a printable PDF (QR code + attendee details). */
-export async function downloadTicketPdf(ticket: { id: string; ticket_code: string }) {
-  const pdf = await apiFetch<Blob>(`/api/admin/tickets/${ticket.id}/pdf`, { method: "GET", rawBlob: true });
-  saveBlob(pdf, `ticket-${ticket.ticket_code}.pdf`);
+/**
+ * Downloads one ticket rendered with the same template as the ticket email.
+ * It's an .html file — open it in a browser and print / "Save as PDF".
+ */
+export async function downloadTicket(ticket: { id: string; ticket_code: string }) {
+  const file = await apiFetch<Blob>(`/api/admin/tickets/${ticket.id}/download`, { method: "GET", rawBlob: true });
+  saveBlob(file, `ticket-${ticket.ticket_code}.html`);
 }
 
-/** Downloads every ticket on an order as one PDF, one page per ticket ("Ticket 1 of 2", ...). */
-export async function downloadOrderTicketsPdf(orderId: string) {
-  const pdf = await apiFetch<Blob>(`/api/admin/orders/${orderId}/tickets/pdf`, { method: "GET", rawBlob: true });
-  saveBlob(pdf, `tickets-${orderId.slice(0, 8)}.pdf`);
+/** Downloads every ticket on an order as one file, one ticket per printed page. */
+export async function downloadOrderTickets(orderId: string) {
+  const file = await apiFetch<Blob>(`/api/admin/orders/${orderId}/tickets/download`, { method: "GET", rawBlob: true });
+  saveBlob(file, `tickets-${orderId.slice(0, 8)}.html`);
 }
 
 // The backend returns 204 No Content on success — no updated order body.
