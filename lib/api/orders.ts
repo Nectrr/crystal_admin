@@ -108,7 +108,7 @@ export async function exportOrdersCsv(params: ExportOrdersParams, label?: string
   saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), name);
 }
 
-function saveBlob(blob: Blob, name: string) {
+export function saveBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

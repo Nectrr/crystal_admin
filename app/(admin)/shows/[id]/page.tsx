@@ -11,11 +11,12 @@ import { ShowForm } from "@/components/shows/ShowForm";
 import { TourStopsTab } from "@/components/shows/TourStopsTab";
 import { RegistrationsTab } from "@/components/shows/RegistrationsTab";
 import { BroadcastTab } from "@/components/shows/BroadcastTab";
+import { ReportTab } from "@/components/shows/ReportTab";
 import { ApiError } from "@/lib/api/client";
 import { useToast } from "@/app/providers/ToastProvider";
 import { getShow, deleteShow, publishShow, unpublishShow, type Show, type TourStop } from "@/lib/api/shows";
 
-type Tab = "details" | "tour-stops" | "registrations" | "email";
+type Tab = "details" | "tour-stops" | "registrations" | "email" | "report";
 
 export default function ShowDetailPage() {
   const params = useParams<{ id: string }>();
@@ -98,6 +99,7 @@ export default function ShowDetailPage() {
     { key: "tour-stops", label: "Tour Stops" },
     { key: "registrations", label: "Registrations" },
     { key: "email", label: "Email attendees" },
+    { key: "report", label: "Report" },
   ];
 
   return (
@@ -139,6 +141,7 @@ export default function ShowDetailPage() {
       )}
       {tab === "registrations" && <RegistrationsTab showId={show.id} />}
       {tab === "email" && <BroadcastTab showId={show.id} />}
+      {tab === "report" && <ReportTab showId={show.id} />}
 
       <ConfirmDialog
         open={deleteOpen}
