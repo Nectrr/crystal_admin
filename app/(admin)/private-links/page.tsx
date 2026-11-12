@@ -77,15 +77,32 @@ export default function PrivateLinksPage() {
       ),
     },
     {
+      key: "available",
+      header: "Tickets enabled",
+      accessor: (l) => l.quantity,
+      sortable: true,
+      render: (l) => <span className="font-medium">{l.quantity}</span>,
+    },
+    {
       key: "sold",
       header: "Sold",
       accessor: (l) => l.tickets_sold,
       sortable: true,
-      render: (l) => (
-        <span>
-          {l.tickets_sold} <span className="text-[#8C8C78]">/ {l.quantity}</span>
-        </span>
-      ),
+      render: (l) => <span>{l.tickets_sold}</span>,
+    },
+    {
+      key: "left",
+      header: "Left",
+      accessor: (l) => Math.max(0, l.quantity - l.tickets_sold),
+      sortable: true,
+      render: (l) => {
+        const left = Math.max(0, l.quantity - l.tickets_sold);
+        return left === 0 ? (
+          <span className="font-medium text-red-600">Sold out</span>
+        ) : (
+          <span className="font-medium text-green-700">{left}</span>
+        );
+      },
     },
     {
       key: "expires",

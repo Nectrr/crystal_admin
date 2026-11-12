@@ -19,6 +19,7 @@ import {
   Handshake,
   Sparkles,
   Lock,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { href: "/merch/products", label: "Merch", icon: ShoppingBag },
   { href: "/affiliates", label: "Affiliates", icon: Handshake },
   { href: "/private-links", label: "Private Links", icon: Lock },
+  { href: "/emails", label: "Email Everyone", icon: Mail },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/brands", label: "Our Universe", icon: Sparkles },

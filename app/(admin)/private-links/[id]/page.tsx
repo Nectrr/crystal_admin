@@ -163,6 +163,22 @@ export default function PrivateLinkDetailPage() {
           )}
 
           <div className="mt-4">
+            <div className="mb-3 grid grid-cols-3 gap-3">
+              {[
+                { label: "Tickets enabled", value: link.quantity, cls: "text-[#4A4A3C]" },
+                { label: "Sold", value: link.tickets_sold, cls: "text-[#4A4A3C]" },
+                {
+                  label: "Left",
+                  value: Math.max(0, link.quantity - link.tickets_sold),
+                  cls: link.quantity - link.tickets_sold > 0 ? "text-green-700" : "text-red-600",
+                },
+              ].map((c) => (
+                <div key={c.label} className="rounded-lg border border-[#EDEAE0] px-3 py-2">
+                  <p className="text-xs text-[#8C8C78]">{c.label}</p>
+                  <p className={`text-xl font-semibold ${c.cls}`}>{c.value}</p>
+                </div>
+              ))}
+            </div>
             <p className="text-sm text-[#4A4A3C]">
               Sold <strong>{link.tickets_sold}</strong> of {link.quantity} at{" "}
               {formatMoney(link.price_pence, link.currency)}

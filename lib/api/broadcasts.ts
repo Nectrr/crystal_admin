@@ -3,7 +3,10 @@ import { apiFetch, buildQuery } from "./client";
 /** A custom email sent to a show's paid ticket holders, with delivery progress. */
 export interface Broadcast {
   id: string;
-  show_id: string;
+  /** Null for site-wide emails. */
+  show_id?: string | null;
+  /** Site-wide emails: the chosen groups, comma-separated. */
+  audience?: string | null;
   tour_stop_id?: string | null;
   tour_stop_name?: string | null;
   subject: string;
@@ -70,4 +73,43 @@ export function createFriendOffer(showId: string, input: FriendOfferInput) {
     `/api/admin/shows/${showId}/friend-offers`,
     { method: "POST", body: input }
   );
+}
+
+// ---- Site-wide emails (everyone in the database) ----
+
+export type AudienceKey = "ticket_buyers" | "registrations" | "newsletter" | "merch" | "contacts";
+
+export interface AudienceCounts {
+  sources: Record<AudienceKey, number>;
+  total: number;
+  unsubscribed: number;
+}
+
+export interface GlobalBroadcastInput {
+  audience: AudienceKey[];
+  subject: string;
+  body_html: string;
+}
+
+export function getGlobalAudience(audience: AudienceKey[]) {
+  return apiFetch<AudienceCounts>(
+    `/api/admin/broadcasts/audience${buildQuery({ audience: audience.join(",") || undefined })}`,
+    { method: "GET" }
+  );
+}
+
+export async function listGlobalBroadcasts(): Promise<Broadcast[]> {
+  return (await apiFetch<Broadcast[] | null>(`/api/admin/broadcasts`, { method: "GET" })) ?? [];
+}
+
+export function createGlobalBroadcast(input: GlobalBroadcastInput) {
+  return apiFetch<Broadcast>(`/api/admin/broadcasts`, { method: "POST", body: input });
+}
+
+export function sendTestGlobalBroadcast(input: GlobalBroadcastInput & { email: string }) {
+  return apiFetch<void>(`/api/admin/broadcasts/test`, { method: "POST", body: input });
+}
+
+export function retryGlobalBroadcast(broadcastId: string) {
+  return apiFetch<{ requeued: number }>(`/api/admin/broadcasts/${broadcastId}/retry`, { method: "POST" });
 }
