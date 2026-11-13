@@ -56,7 +56,8 @@ export type MerchProductInput = {
 
 export async function listMerchProducts(): Promise<MerchProductWithVariants[]> {
   const data = await apiFetch<MerchProductWithVariants[] | null>("/api/admin/merch/products", { method: "GET" });
-  return data ?? [];
+  // A product with no variants yet comes back with `variants: null`.
+  return (data ?? []).map((p) => ({ ...p, variants: p.variants ?? [] }));
 }
 
 export function createMerchProduct(data: Partial<MerchProductInput>) {
