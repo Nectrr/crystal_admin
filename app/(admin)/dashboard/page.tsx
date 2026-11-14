@@ -9,6 +9,7 @@ import { getDashboardStats, type DashboardStats } from "@/lib/api/dashboard";
 import type { OrderStatus } from "@/lib/api/orders";
 import { listNotificationFailures, retryNotification, type FailedNotification } from "@/lib/api/notifications";
 import { ApiError } from "@/lib/api/client";
+import { RevenueByStopTable } from "@/components/dashboard/RevenueByStopTable";
 import { useToast } from "@/app/providers/ToastProvider";
 
 const TILES: { key: keyof Omit<DashboardStats, "payments">; label: string; icon: typeof LayoutGrid }[] = [
@@ -175,6 +176,8 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          <RevenueByStopTable rows={payments.revenue_by_stop} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
